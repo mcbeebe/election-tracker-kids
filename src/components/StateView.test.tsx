@@ -42,6 +42,8 @@ describe("StateView", () => {
     expect(screen.getByRole("heading", { name: /Ballot measures · \d+ measures/ })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Senate" })).toBeInTheDocument();
     expect(screen.getByText("No Senate race in California this year.")).toBeInTheDocument();
+    // Every loaded panel carries its own source + "as of" (header badge + 4 panels).
+    expect(screen.getAllByText(/civicAPI · as of/)).toHaveLength(5);
   });
 
   it("reports a failing chamber and keeps the rest", async () => {

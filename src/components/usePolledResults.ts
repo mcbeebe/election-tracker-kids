@@ -21,6 +21,15 @@ export interface PolledResults {
   now: number;
 }
 
+interface Snapshot {
+  key: string;
+  data: PolledResults["data"];
+  errors: PolledResults["errors"];
+  loaded: boolean;
+}
+
+const EMPTY: Snapshot = { key: "", data: {}, errors: {}, loaded: false };
+
 async function fetchChamber(chamber: Chamber, query: string, signal: AbortSignal): Promise<ResultsPayload> {
   const res = await fetch(`/api/results?chamber=${chamber}${query ? `&${query}` : ""}`, { cache: "no-store", signal });
   const body = (await res.json()) as ResultsPayload | { message?: string };
@@ -37,44 +46,40 @@ async function fetchChamber(chamber: Chamber, query: string, signal: AbortSignal
  * @param query - Extra query string applied to every chamber, e.g. `state=CA`.
  */
 export function usePolledResults(chambers: readonly Chamber[], intervalMs = POLL_MS, query = ""): PolledResults {
-  const [data, setData] = useState<PolledResults["data"]>({});
-  const [errors, setErrors] = useState<PolledResults["errors"]>({});
-  const [loading, setLoading] = useState(true);
+  // Results are tagged with the query they answer. Reads below ignore results for any other
+  // query, so changing a filter never leaves the previous filter's rows on screen.
+  const key = `${chambers.join(",")}?${query}`;
+  const [snap, setSnap] = useState<Snapshot>({ key, data: {}, errors: {}, loaded: false });
   const [nextAt, setNextAt] = useState(() => Date.now() + intervalMs);
   const [now, setNow] = useState(() => Date.now());
-  const key = `${chambers.join(",")}?${query}`;
   const chambersRef = useRef(chambers);
   chambersRef.current = chambers;
   const queryRef = useRef(query);
   queryRef.current = query;
 
-  const poll = useCallback(async (signal: AbortSignal) => {
+  const poll = useCallback(async (signal: AbortSignal, pollKey: string) => {
     const list = chambersRef.current;
     const settled = await Promise.allSettled(list.map((c) => fetchChamber(c, queryRef.current, signal)));
     if (signal.aborted) return;
-    setData((prev) => {
-      const next = { ...prev };
+    setSnap((prev) => {
+      const base = prev.key === pollKey ? prev : { key: pollKey, data: {}, errors: {}, loaded: false };
+      const data = { ...base.data };
+      const errors: PolledResults["errors"] = {};
       settled.forEach((s, i) => {
-        if (s.status === "fulfilled") next[list[i]!] = s.value;
+        const c = list[i]!;
+        if (s.status === "fulfilled") data[c] = s.value;
+        else errors[c] = s.reason instanceof Error ? s.reason.message : String(s.reason);
       });
-      return next;
+      return { key: pollKey, data, errors, loaded: true };
     });
-    setErrors(() => {
-      const next: PolledResults["errors"] = {};
-      settled.forEach((s, i) => {
-        if (s.status === "rejected") next[list[i]!] = s.reason instanceof Error ? s.reason.message : String(s.reason);
-      });
-      return next;
-    });
-    setLoading(false);
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
-    void poll(controller.signal);
+    void poll(controller.signal, key);
     setNextAt(Date.now() + intervalMs);
     const id = setInterval(() => {
-      void poll(controller.signal);
+      void poll(controller.signal, key);
       setNextAt(Date.now() + intervalMs);
     }, intervalMs);
     const tick = setInterval(() => setNow(Date.now()), 1000);
@@ -85,7 +90,14 @@ export function usePolledResults(chambers: readonly Chamber[], intervalMs = POLL
     };
   }, [key, intervalMs, poll]);
 
-  return { data, errors, loading, now, nextIn: Math.max(0, Math.ceil((nextAt - now) / 1000)) };
+  const current = snap.key === key ? snap : EMPTY;
+  return {
+    data: current.data,
+    errors: current.errors,
+    loading: !current.loaded,
+    now,
+    nextIn: Math.max(0, Math.ceil((nextAt - now) / 1000)),
+  };
 }
 
 /**

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { cand } from "@/test/factories";
 import { race } from "@/test/fake-provider";
 import { GOVERNOR_PRE, HOUSE_LIVE, SENATE_LIVE, SENATE_PRE, splitFixture } from "@/test/live-fixtures";
-import { buildBop } from "./bop";
+import { buildBop, SENATE_NOT_UP_2026 } from "./bop";
 
 describe("buildBop — Senate (real fixtures)", () => {
   it("before any calls: 34 D / 31 R not up, 35 races up, none called", () => {
@@ -21,20 +21,29 @@ describe("buildBop — Senate (real fixtures)", () => {
     expect(m.called.D + m.called.R + m.leading.D + m.leading.R + m.leading.I + m.leading.O + m.uncalled).toBe(35);
   });
 
-  it("flags a disagreement with the source aggregate", () => {
-    // Holdovers = aggregate − called (floored at 0), so a mismatch shows up when the source
-    // has called more seats for a party than its own aggregate tally allows.
-    const { seats, aggregate } = splitFixture(SENATE_LIVE);
-    const txCalledR = seats.map((r) =>
-      r.state === "TX" ? { ...r, candidates: r.candidates.map((c) => ({ ...c, winner: c.partyKey === "R" })) } : r,
-    );
-    const aggNoR = { ...aggregate!, candidates: aggregate!.candidates.map((c) => (c.partyKey === "R" ? { ...c, seats: 0 } : c)) };
-    expect(buildBop("senate", txCalledR, aggNoR).aggregateMismatch).toEqual(["R"]);
+  it("pins holdovers to the pre-results baseline from civicAPI's own national row", () => {
+    const { aggregate } = splitFixture(SENATE_PRE);
+    const seats = Object.fromEntries(aggregate!.candidates.filter((c) => c.seats).map((c) => [c.partyKey, c.seats]));
+    expect(seats).toEqual({ D: SENATE_NOT_UP_2026.D, R: SENATE_NOT_UP_2026.R });
   });
 
-  it("without an aggregate there are no holdovers and no cross-check", () => {
-    const m = buildBop("senate", [race("1")], null);
-    expect(m).toMatchObject({ holdover: { D: 0, R: 0, I: 0 }, aggregateMismatch: null });
+  it("flags an aggregate that lags a call (calls on race rows, aggregate not yet updated)", () => {
+    const { seats, aggregate } = splitFixture(SENATE_LIVE);
+    const lagging = { ...aggregate!, candidates: aggregate!.candidates.map((c) => (c.partyKey === "D" ? { ...c, seats: 34 } : c)) };
+    const m = buildBop("senate", seats, lagging);
+    expect(m).toMatchObject({ d: 36, r: 31, aggregateMismatch: ["D"] });
+  });
+
+  it("flags an aggregate that runs ahead of the race rows, without painting the extra seat", () => {
+    const { seats, aggregate } = splitFixture(SENATE_LIVE);
+    const ahead = { ...aggregate!, candidates: aggregate!.candidates.map((c) => (c.partyKey === "D" ? { ...c, seats: 37 } : c)) };
+    expect(buildBop("senate", seats, ahead)).toMatchObject({ d: 36, aggregateMismatch: ["D"] });
+  });
+
+  it("keeps the 65 seats not up when the aggregate row is missing, and says so", () => {
+    const { seats } = splitFixture(SENATE_LIVE);
+    const m = buildBop("senate", seats, null);
+    expect(m).toMatchObject({ d: 36, r: 31, holdover: SENATE_NOT_UP_2026, aggregateMismatch: null, aggregateMissing: true });
   });
 });
 
@@ -54,7 +63,7 @@ describe("buildBop — Governors", () => {
   it("is races-up only (36 states; territories excluded), no majority line", () => {
     const { seats, aggregate } = splitFixture(GOVERNOR_PRE);
     const m = buildBop("governor", seats, aggregate);
-    expect(m).toMatchObject({ total: 36, racesUp: 36, majority: null, aggregateMismatch: null });
+    expect(m).toMatchObject({ total: 36, racesUp: 36, majority: null, aggregateMismatch: null, aggregateMissing: false });
   });
 });
 

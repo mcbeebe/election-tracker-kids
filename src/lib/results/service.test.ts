@@ -108,13 +108,15 @@ describe("ResultsService.getResults", () => {
     expect(hook).toHaveBeenCalledWith("senate", senate, new Date("2026-11-04T01:00:00.000Z"));
   });
 
-  it("still serves results when the refresh hook fails", async () => {
+  it("still serves results when the refresh hook fails, and logs it in the background", async () => {
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { service } = setup(async () => {
       throw new Error("db down");
     });
-    expect((await service.getResults("senate")).payload.races).toHaveLength(2);
+    const r = await service.getResults("senate");
+    expect(r.payload.races).toHaveLength(2);
+    await r.refresh;
     expect(String(error.mock.calls[0]![0])).toContain("db down");
   });
 
@@ -122,8 +124,60 @@ describe("ResultsService.getResults", () => {
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const { service } = setup(() => Promise.reject("nope"));
-    await service.getResults("senate");
+    await (await service.getResults("senate")).refresh;
     expect(String(error.mock.calls[0]![0])).toContain("nope");
+  });
+
+  it("a hung snapshot write never delays results or blocks the next refresh", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const hang = vi.fn(() => new Promise<void>(() => undefined));
+    const { service, provider, clock } = setup(hang);
+    const first = await service.getResults("senate");
+    expect(first.payload.races).toHaveLength(2);
+    expect(first.refresh).toBeInstanceOf(Promise); // write still pending → route keeps it alive
+    clock.advance(46_000);
+    const second = await service.getResults("senate");
+    expect(second.payload.cache).toBe("stale");
+    await Promise.race([second.refresh, new Promise((r) => setTimeout(r, 0))]);
+    expect(provider.listRaces).toHaveBeenCalledTimes(2);
+    expect(hang).toHaveBeenCalledTimes(2);
+  });
+
+  it("abandons a snapshot write after the timeout and logs it", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const service = new ResultsService({
+      provider: fakeProvider({ senate }),
+      ttlMs: 45_000,
+      snapshotTimeoutMs: 5,
+      onRefresh: () => new Promise<void>(() => undefined),
+    });
+    await (await service.getResults("senate")).refresh;
+    expect(String(error.mock.calls[0]![0])).toContain("snapshot write timed out after 5ms");
+  });
+
+  it("asOf is the earliest page pull, not when a slow load finished", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const clock = fakeClock(Date.parse("2026-11-04T03:00:30.000Z"));
+    const provider = fakeProvider();
+    provider.listRaces.mockResolvedValue([
+      race("1", { fetchedAt: "2026-11-04T03:00:00.000Z" }),
+      race("2", { fetchedAt: "2026-11-04T03:00:19.000Z" }),
+    ]);
+    const hook = vi.fn(async () => undefined);
+    const service = new ResultsService({ provider, ttlMs: 45_000, now: clock.now, onRefresh: hook });
+    const { payload } = await service.getResults("senate");
+    expect(payload.asOf).toBe("2026-11-04T03:00:00.000Z");
+    expect(payload.servedAt).toBe("2026-11-04T03:00:30.000Z");
+    expect(hook).toHaveBeenCalledWith("senate", expect.any(Array), new Date("2026-11-04T03:00:00.000Z"));
+  });
+
+  it("falls back to the cache load time when races carry no valid fetch time", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const clock = fakeClock(Date.parse("2026-11-04T03:00:30.000Z"));
+    const provider = fakeProvider({ senate: [race("1", { fetchedAt: "not-a-date" })] });
+    const service = new ResultsService({ provider, ttlMs: 45_000, now: clock.now });
+    expect((await service.getResults("senate")).payload.asOf).toBe("2026-11-04T03:00:30.000Z");
   });
 });
 
@@ -137,7 +191,15 @@ describe("ResultsService.health", () => {
     expect(provider.health).toHaveBeenCalledTimes(1);
     expect(a.provider.ok).toBe(true);
     expect(a.cache).toEqual([
-      { key: "senate", loadedAt: Date.parse("2026-11-04T01:00:00.000Z"), lastErrorAt: null, lastError: null, refreshing: false },
+      {
+        key: "senate",
+        loadedAt: Date.parse("2026-11-04T01:00:00.000Z"),
+        lastErrorAt: null,
+        lastError: null,
+        refreshing: false,
+        consecutiveFailures: 0,
+        cooldownMs: 0,
+      },
     ]);
   });
 });

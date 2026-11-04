@@ -35,7 +35,10 @@ export function TileMap({ tiles, label }: TileMapProps) {
               style={{ color: c.color }}
             >
               <span className="text-[11px] font-bold sm:text-[13px]">{t.code}</span>
-              <span className="hidden max-w-full truncate px-0.5 font-mono text-[9px] sm:block sm:text-[10px]">{t.sub}</span>
+              <span className="hidden max-w-full px-0.5 font-mono text-[9px] whitespace-nowrap sm:block sm:text-[10px]">{t.sub}</span>
+              {t.sub2 && (
+                <span className="hidden max-w-full px-0.5 font-mono text-[9px] whitespace-nowrap sm:block sm:text-[10px]">{t.sub2}</span>
+              )}
             </Link>
           </li>
         );

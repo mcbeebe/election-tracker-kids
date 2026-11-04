@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type KeyboardEvent, useMemo, useState } from "react";
 import type { Chamber } from "@/lib/providers/types";
-import { buildBop } from "@/lib/view/bop";
+import { buildBop, TERRITORIES } from "@/lib/view/bop";
 import { buildHouseTiles, buildStateTiles, closestRaces } from "@/lib/view/tiles";
 import { BopBar } from "./bop/BopBar";
 import { TileMap } from "./map/TileMap";
@@ -39,6 +39,23 @@ export function NationalView() {
   const stale = isStale(loaded, now);
   const errorList = Object.entries(errors);
   const mismatch = bops.find((b) => b.aggregateMismatch && b.aggregateMismatch.length > 0);
+  const missingAgg = bops.filter((b) => b.aggregateMissing).map((b) => TAB_LABEL[b.chamber]);
+  const upCount = active ? active.races.filter((r) => tab !== "governor" || !TERRITORIES.has(r.state)).length : 0;
+
+  /** Arrow/Home/End keys move between chamber tabs (WAI-ARIA tabs pattern). */
+  const onTabKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const i = CHAMBERS.indexOf(tab);
+    const next =
+      e.key === "ArrowRight" ? CHAMBERS[(i + 1) % CHAMBERS.length]
+      : e.key === "ArrowLeft" ? CHAMBERS[(i - 1 + CHAMBERS.length) % CHAMBERS.length]
+      : e.key === "Home" ? CHAMBERS[0]
+      : e.key === "End" ? CHAMBERS[CHAMBERS.length - 1]
+      : undefined;
+    if (!next) return;
+    e.preventDefault();
+    setTab(next);
+    document.getElementById(`tab-${next}`)?.focus();
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-[#F7F6F2] text-[#1B1F2A]">
@@ -67,6 +84,12 @@ export function NationalView() {
           ) : (
             bops.map((b) => <BopBar key={b.chamber} model={b} />)
           )}
+          {missingAgg.length > 0 && (
+            <p className="text-xs text-[#8A4B00]">
+              civicAPI&apos;s national tally for {missingAgg.join(" and ")} didn&apos;t come back this refresh, so those
+              totals can&apos;t be cross-checked right now.
+            </p>
+          )}
           {mismatch && (
             <p className="text-xs text-[#8A4B00]">
               Note: our {TAB_LABEL[mismatch.chamber]} total disagrees with civicAPI&apos;s own tally for{" "}
@@ -79,15 +102,18 @@ export function NationalView() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 id="map-h" className="m-0 font-serif text-[26px] font-bold">
               {TAB_LABEL[tab]}
-              {active ? ` · ${active.races.length} ${tab === "governor" ? "races" : "seats"} up` : ""}
+              {active ? ` · ${upCount} ${tab === "governor" ? "races" : "seats"} up` : ""}
             </h2>
-            <div role="tablist" aria-label="Chamber" className="flex gap-1 rounded-lg bg-[#ECEAE3] p-1">
+            <div role="tablist" aria-label="Chamber" className="flex gap-1 rounded-lg bg-[#ECEAE3] p-1" onKeyDown={onTabKey}>
               {CHAMBERS.map((c) => (
                 <button
                   key={c}
+                  id={`tab-${c}`}
                   role="tab"
                   type="button"
                   aria-selected={tab === c}
+                  aria-controls="chamber-panel"
+                  tabIndex={tab === c ? 0 : -1}
                   onClick={() => setTab(c)}
                   className={`min-h-9 rounded-md px-3 text-sm font-semibold ${tab === c ? "bg-white shadow-sm" : "text-[#5B6274]"}`}
                 >
@@ -96,10 +122,10 @@ export function NationalView() {
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap gap-6">
+          <div id="chamber-panel" role="tabpanel" aria-labelledby={`tab-${tab}`} className="flex flex-wrap gap-6">
             <div className="min-w-0 flex-[999_1_520px] rounded-xl border border-[#E2E0D8] bg-white p-3 sm:p-5">
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                {active ? <SourceBadge source={active.source} asOf={active.asOf} stale={active.stale} /> : <span />}
+                {active ? <SourceBadge source={active.source} asOf={active.asOf} stale={isStale([active], now)} /> : <span />}
                 {tab !== "house" && (
                   <label className="flex min-h-9 items-center gap-2 text-sm text-[#5B6274]">
                     <input
@@ -136,8 +162,8 @@ export function NationalView() {
       </main>
 
       <footer className="w-full border-t border-[#E2E0D8] bg-white px-4 pt-4 pb-6 text-xs text-[#5B6274] sm:px-8">
-        Results via civicAPI (unverified third party). &ldquo;Called&rdquo; reflects the source&apos;s winner flag or a
-        manual override — never this app&apos;s projection. % reporting is precinct-based.
+        Results via civicAPI (unverified third party). &ldquo;Called&rdquo; is civicAPI&apos;s own winner flag — never
+        this app&apos;s projection. % reporting is precinct-based.
       </footer>
     </div>
   );

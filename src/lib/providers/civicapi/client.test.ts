@@ -109,6 +109,33 @@ describe("CivicApiClient", () => {
     expect(at[2]! - at[1]!).toBeGreaterThanOrEqual(1000);
   });
 
+  it("jitter can never pull two request starts closer than minIntervalMs", async () => {
+    const clock = fakeClock(0);
+    const starts: number[] = [];
+    const randoms = [0.996, 0, 0.5, 0];
+    const c = new CivicApiClient({
+      baseUrl: "https://civicapi.test",
+      minIntervalMs: 1000,
+      maxJitterMs: 250,
+      now: clock.now,
+      sleep: clock.sleep,
+      random: () => randoms.shift() ?? 0,
+      fetch: (async () => {
+        starts.push(clock.now());
+        return new Response("{}");
+      }) as unknown as typeof fetch,
+    });
+    for (let i = 0; i < 4; i++) await c.getJson("/x");
+    for (let i = 1; i < starts.length; i++) expect(starts[i]! - starts[i - 1]!).toBeGreaterThanOrEqual(1000);
+  });
+
+  it("keeps untracked calls (health pings) out of the rolling stats", async () => {
+    const { c } = client([{ body: '{"status":"ok"}' }, { status: 502 }]);
+    await c.getJson("/status", {}, { retry: false, track: false });
+    await expect(c.getJson("/status", {}, { retry: false, track: false })).rejects.toMatchObject({ status: 502 });
+    expect(c.stats()).toMatchObject({ attempts: 0, lastOkAt: null, lastError: null });
+  });
+
   it("adds random jitter before each request", async () => {
     const { c, clock } = client([{ body: "1" }], { random: () => 0.5, maxJitterMs: 250 });
     await c.getJson("/x");

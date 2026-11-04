@@ -29,5 +29,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm lint
-      - run: pnpm test
+      # Enforces the 90% coverage thresholds on src/lib (vitest.config.mts).
+      - run: pnpm test:coverage
       - run: pnpm build

@@ -5,14 +5,16 @@ const hatch = (c: string) => `repeating-linear-gradient(135deg, ${c}66 0 5px, #E
 
 /**
  * Balance-of-power bar: called (solid) from each end, leading (hatched, lighter) inside,
- * uncalled gap in the middle, majority tick when the chamber has one.
+ * uncalled gap in the middle, and a majority tick at the center: a party past the center line
+ * holds more than half the seats, whichever side it starts from.
  */
 export function BopBar({ model }: { model: BopModel }) {
   const { total, d, r, leading, majority } = model;
   const other = model.called.I + model.called.O + model.holdover.I;
   const w = (n: number) => `${(n / total) * 100}%`;
   const name = LABEL[model.chamber];
-  const gap = total - d - r - other - leading.D - leading.R;
+  // Every race not yet called, including the ones where someone leads (hatched).
+  const uncalledRaces = model.racesUp - Object.values(model.called).reduce((a, b) => a + b, 0);
   const summary =
     `${name}: Democrats ${d}, Republicans ${r}` +
     (other ? `, other ${other}` : "") +
@@ -43,7 +45,7 @@ export function BopBar({ model }: { model: BopModel }) {
             aria-hidden="true"
             data-testid="majority-tick"
             className="absolute -top-0.5 -bottom-0.5 w-0.5 bg-[#1B1F2A]"
-            style={{ left: w(majority) }}
+            style={{ left: "50%" }}
           />
         )}
       </div>
@@ -52,7 +54,8 @@ export function BopBar({ model }: { model: BopModel }) {
         <span className="text-[11px] font-semibold tracking-wider text-[#5B6274] uppercase">GOP</span>
       </div>
       <p data-testid="bop-caption" className="col-start-2 -mt-2 mb-0 text-center font-mono text-[11px] text-[#5B6274]">
-        {gap > 0 ? `${gap} uncalled` : "all called"} · {majority ? `${majority} to win` : `${model.racesUp} races up`}
+        {uncalledRaces > 0 ? `${uncalledRaces} uncalled` : "all called"} ·{" "}
+        {majority ? `${majority} to win (cross the center line)` : `${model.racesUp} races up`}
       </p>
     </div>
   );

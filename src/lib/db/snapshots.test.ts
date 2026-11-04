@@ -26,22 +26,28 @@ describe("dbRaceId", () => {
 
 describe("rows", () => {
   it("maps district number, at-large and measure locality", () => {
-    expect(rows.race(race("1", { district: 7 }), "t").district).toBe("7");
-    expect(rows.race(race("1", { atLarge: true }), "t").district).toBe("AL");
-    expect(rows.race(race("1", { chamber: "measures", locality: "Jasper" }), "t").district).toBe("Jasper");
-    expect(rows.race(race("1"), "t").district).toBeNull();
+    expect(rows.race(race("1", { district: 7 })).district).toBe("7");
+    expect(rows.race(race("1", { atLarge: true })).district).toBe("AL");
+    expect(rows.race(race("1", { chamber: "measures", locality: "Jasper" })).district).toBe("Jasper");
+    expect(rows.race(race("1")).district).toBeNull();
   });
 
   it("does not send first_seen (column default must win on insert, never overwritten)", () => {
-    expect("first_seen" in rows.race(race("1"), "t")).toBe(false);
+    expect("first_seen" in rows.race(race("1"))).toBe(false);
+  });
+
+  it("last_seen and captured_at are the race's own pull time, not the write time", () => {
+    const r = race("5", { fetchedAt: "2026-11-04T02:00:07.000Z" });
+    expect(rows.race(r).last_seen).toBe("2026-11-04T02:00:07.000Z");
+    expect(rows.snapshot(r).captured_at).toBe("2026-11-04T02:00:07.000Z");
   });
 
   it("snapshot payload carries normalized candidates and totals", () => {
     const r = race("5");
-    expect(rows.snapshot(r, "t")).toEqual({
+    expect(rows.snapshot(r)).toEqual({
       race_id: "civicapi:5",
       source: "civicapi",
-      captured_at: "t",
+      captured_at: "2026-11-04T01:00:00.000Z",
       percent_reporting: 50,
       payload: { totalVotes: 10, candidates: r.candidates },
     });
@@ -59,7 +65,7 @@ describe("createSnapshotWriter", () => {
     ]);
     expect(db.calls[0]!.opts).toEqual({ onConflict: "id" });
     expect(db.calls[1]!.opts).toEqual({ onConflict: "race_id,candidate_id" });
-    expect(db.calls[2]!.rows[0]).toMatchObject({ captured_at: AT.toISOString() });
+    expect(db.calls[2]!.rows[0]).toMatchObject({ captured_at: "2026-11-04T01:00:00.000Z" });
   });
 
   it("chunks large batches", async () => {

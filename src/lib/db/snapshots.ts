@@ -23,7 +23,7 @@ export function dbRaceId(race: Pick<NormalizedRace, "source" | "id">): string {
 
 /** Row builders, exported for tests. */
 export const rows = {
-  race(r: NormalizedRace, seenAt: string) {
+  race(r: NormalizedRace) {
     return {
       id: dbRaceId(r),
       source: r.source,
@@ -33,7 +33,7 @@ export const rows = {
       district: r.district === null ? (r.atLarge ? "AL" : r.locality) : String(r.district),
       name: r.name,
       election_type: r.electionType,
-      last_seen: seenAt,
+      last_seen: r.fetchedAt,
     };
   },
   candidates(r: NormalizedRace) {
@@ -45,11 +45,11 @@ export const rows = {
       color: c.color,
     }));
   },
-  snapshot(r: NormalizedRace, capturedAt: string) {
+  snapshot(r: NormalizedRace) {
     return {
       race_id: dbRaceId(r),
       source: r.source,
-      captured_at: capturedAt,
+      captured_at: r.fetchedAt,
       percent_reporting: r.percentReporting,
       payload: { totalVotes: r.totalVotes, candidates: r.candidates },
     };
@@ -76,18 +76,18 @@ async function write(
 /**
  * Build the {@link RefreshHook} that persists every successful pull: upserts `races` and
  * `candidates`, then inserts one `snapshots` row per race (CLAUDE.md non-negotiable #4).
- * `first_seen` is left to the column default so upserts never overwrite it.
+ * `captured_at` / `last_seen` are each race's own `fetchedAt` (when its page was pulled), not
+ * the write time. `first_seen` is left to the column default so upserts never overwrite it.
  *
  * @param db - Server-side Supabase client (service role).
  */
 export function createSnapshotWriter(db: SnapshotDb): RefreshHook {
-  return async (_chamber: Chamber, races: NormalizedRace[], fetchedAt: Date) => {
+  return async (_chamber: Chamber, races: NormalizedRace[]) => {
     if (races.length === 0) return;
-    const at = fetchedAt.toISOString();
-    await write("races", races.map((r) => rows.race(r, at)), (b) => db.from("races").upsert(b, { onConflict: "id" }));
+    await write("races", races.map(rows.race), (b) => db.from("races").upsert(b, { onConflict: "id" }));
     await write("candidates", races.flatMap(rows.candidates), (b) =>
       db.from("candidates").upsert(b, { onConflict: "race_id,candidate_id" }),
     );
-    await write("snapshots", races.map((r) => rows.snapshot(r, at)), (b) => db.from("snapshots").insert(b));
+    await write("snapshots", races.map(rows.snapshot), (b) => db.from("snapshots").insert(b));
   };
 }

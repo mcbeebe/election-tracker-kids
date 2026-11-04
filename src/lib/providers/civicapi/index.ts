@@ -11,6 +11,12 @@ export const SEARCH_PAGE_LIMIT = 500;
 /** Safety cap on pages per type (5,000 races) in case `offset` is ignored upstream. */
 export const MAX_PAGES = 10;
 
+/** A search must have succeeded this recently for {@link CivicApiProvider.health} to report ok. */
+export const SEARCH_HEALTHY_WITHIN_MS = 5 * 60_000;
+
+/** Search error rate (rolling window) at or above which health is not ok. */
+export const MAX_HEALTHY_ERROR_RATE = 0.5;
+
 /** Minimal client surface the provider needs (lets tests inject a fake). */
 export type CivicApiTransport = Pick<CivicApiClient, "getJson" | "stats">;
 
@@ -63,26 +69,36 @@ export class CivicApiProvider implements ResultsProvider {
     return result.race;
   }
 
-  /** Ping `/status` once (rate-limited, no retries) and combine with rolling stats. */
+  /**
+   * Health verdict. `/status` alone is not trusted: it stayed 200 while every search failed on
+   * election night (DATA-SOURCES.md). `ok` therefore needs `/status` ok **and** healthy searches:
+   * no search attempted yet, or a successful search within {@link SEARCH_HEALTHY_WITHIN_MS} and an
+   * error rate below {@link MAX_HEALTHY_ERROR_RATE}. The ping is a single, untracked attempt so it
+   * neither waits through retries nor dilutes the search stats.
+   */
   async health(): Promise<ProviderHealth> {
-    let ok = false;
+    let pingOk = false;
     let pingError: string | null = null;
     try {
-      const body = await this.client.getJson("/status", {}, { retry: false });
-      ok = (body as { status?: unknown } | null)?.status === "ok";
-      if (!ok) pingError = "unexpected /status body";
+      const body = await this.client.getJson("/status", {}, { retry: false, track: false });
+      pingOk = (body as { status?: unknown } | null)?.status === "ok";
+      if (!pingOk) pingError = "unexpected /status body";
     } catch (e) {
       pingError = e instanceof CivicApiError ? `${e.kind}${e.status ? ` ${e.status}` : ""}` : String(e);
     }
     const s = this.client.stats();
+    const now = this.now().getTime();
+    const searchOk =
+      s.attempts === 0 ||
+      (s.lastOkAt !== null && now - s.lastOkAt <= SEARCH_HEALTHY_WITHIN_MS && s.errorRate < MAX_HEALTHY_ERROR_RATE);
     return {
       source: this.id,
-      ok,
-      checkedAt: this.now().toISOString(),
+      ok: pingOk && searchOk,
+      checkedAt: new Date(now).toISOString(),
       latencyMs: s.lastLatencyMs,
       lastOkAt: s.lastOkAt === null ? null : new Date(s.lastOkAt).toISOString(),
       errorRate: s.errorRate,
-      lastError: pingError ?? s.lastError,
+      lastError: pingError ?? (searchOk ? null : (s.lastError ?? "no recent successful search")),
     };
   }
 

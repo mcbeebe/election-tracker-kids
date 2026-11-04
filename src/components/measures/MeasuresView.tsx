@@ -20,7 +20,10 @@ export function MeasuresView() {
   const query = [includeLocal ? "scope=all" : "scope=statewide", state ? `state=${state}` : ""].filter(Boolean).join("&");
   const { data, errors, loading, nextIn, now } = usePolledResults(MEASURES, undefined, query);
   const payload = data.measures;
-  const rows = useMemo(() => (payload ? filterMeasures(payload.races.map(measureRow), { q }) : []), [payload, q]);
+  const rows = useMemo(
+    () => (payload ? filterMeasures(payload.races.map(measureRow), { q, state: state || undefined }) : []),
+    [payload, q, state],
+  );
   const stale = isStale([payload], now);
   const states = useMemo(() => [...US_STATE_CODES].sort((a, b) => stateName(a).localeCompare(stateName(b))), []);
 

@@ -57,7 +57,8 @@ monte_carlo{simulations, expected_*_seats, p5/p50/p95, majority_threshold}, dist
 Each chamber search includes one `province: "US"` roll-up row. Its candidates are parties, and
 `seats` = seats held after the source's calls: Senate started at 34 D + 31 R (the 65 seats not up)
 and read 36 D + 31 R once GA and VA were called D. Never count an aggregate as a seat; it is a
-useful cross-check for balance-of-power totals. civicAPI called GA at 32% and VA at 19% reporting —
+useful cross-check for balance-of-power totals (the app pins the 34 D / 31 R pre-results values as the
+Senate not-up baseline and compares its own totals to this row each refresh). civicAPI called GA at 32% and VA at 19% reporting —
 its calls come early, so always label them "called by civicAPI".
 
 ### Observed failure modes

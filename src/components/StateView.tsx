@@ -8,6 +8,7 @@ import { stateName } from "@/lib/view/states";
 import { MeasuresTable } from "./measures/MeasuresTable";
 import { RaceTable } from "./races/RaceTable";
 import { SiteHeader } from "./SiteHeader";
+import { SourceBadge } from "./SourceBadge";
 import { StatusBanners } from "./StatusBanners";
 import { isStale, usePolledResults } from "./usePolledResults";
 
@@ -45,10 +46,13 @@ export function StateView({ code }: { code: string }) {
           const count = p?.races.length ?? 0;
           return (
             <section key={c} aria-labelledby={`h-${c}`} className="flex flex-col gap-3">
-              <h2 id={`h-${c}`} className="m-0 font-serif text-[22px] font-bold">
-                {TITLES[c]}
-                {p && count > 0 ? ` · ${count} ${c === "measures" ? (count === 1 ? "measure" : "measures") : count === 1 ? "race" : "races"}` : ""}
-              </h2>
+              <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                <h2 id={`h-${c}`} className="m-0 font-serif text-[22px] font-bold">
+                  {TITLES[c]}
+                  {p && count > 0 ? ` · ${count} ${c === "measures" ? (count === 1 ? "measure" : "measures") : count === 1 ? "race" : "races"}` : ""}
+                </h2>
+                {p && <SourceBadge source={p.source} asOf={p.asOf} stale={isStale([p], now)} />}
+              </div>
               {!p ? (
                 <p className="m-0 text-sm text-[#5B6274]">{loading ? "Loading…" : "Unavailable right now."}</p>
               ) : count === 0 ? (

@@ -57,6 +57,50 @@ describe("NationalView", () => {
     expect(screen.queryByRole("checkbox", { name: "Show leading" })).toBeNull();
   });
 
+  it("Governors heading counts the 36 states, not territories", async () => {
+    mockFetch((c) => Response.json(payload(c as keyof typeof FILES, "2026-11-04T01:00:00.000Z")));
+    render(<NationalView />);
+    await screen.findByRole("list", { name: "Senate races by state" });
+    fireEvent.click(screen.getByRole("tab", { name: "Governors" }));
+    expect(screen.getByRole("heading", { name: "Governors · 36 races up" })).toBeInTheDocument();
+  });
+
+  it("tabs follow the WAI-ARIA pattern: one tab stop, arrow keys, controls the panel", async () => {
+    mockFetch((c) => Response.json(payload(c as keyof typeof FILES, "2026-11-04T01:00:00.000Z")));
+    render(<NationalView />);
+    await screen.findByRole("list", { name: "Senate races by state" });
+    const tabs = within(screen.getByRole("tablist")).getAllByRole("tab");
+    expect(tabs.map((t) => t.getAttribute("tabindex"))).toEqual(["0", "-1", "-1"]);
+    expect(screen.getByRole("tabpanel", { name: "Senate" })).toHaveAttribute("id", tabs[0]!.getAttribute("aria-controls"));
+    fireEvent.keyDown(tabs[0]!, { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: "House" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "House" })).toHaveFocus();
+    fireEvent.keyDown(screen.getByRole("tab", { name: "House" }), { key: "End" });
+    expect(screen.getByRole("tab", { name: "Governors" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Governors" }), { key: "ArrowRight" });
+    expect(screen.getByRole("tab", { name: "Senate" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Senate" }), { key: "ArrowLeft" });
+    expect(screen.getByRole("tab", { name: "Governors" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Governors" }), { key: "Home" });
+    expect(screen.getByRole("tab", { name: "Senate" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(screen.getByRole("tab", { name: "Senate" }), { key: "a" });
+    expect(screen.getByRole("tab", { name: "Senate" })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("does not flag fresh data as stale just because the server served a stale-while-revalidate copy", async () => {
+    mockFetch((c) => Response.json({ ...payload(c as keyof typeof FILES, "2026-11-04T01:00:00.000Z"), stale: true, cache: "stale" }));
+    render(<NationalView />);
+    await screen.findByRole("list", { name: "Senate races by state" });
+    expect(screen.queryByText(/\(stale\)/)).toBeNull();
+  });
+
+  it("says when civicAPI's national tally is missing instead of silently dropping it", async () => {
+    mockFetch((c) => Response.json({ ...payload(c as keyof typeof FILES, "2026-11-04T01:00:00.000Z"), aggregate: null }));
+    render(<NationalView />);
+    expect(await screen.findByText(/national tally for Senate and House didn.t come back/)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: /Senate: Democrats 36, Republicans 31/ })).toBeInTheDocument();
+  });
+
   it("shows a stale banner when data is older than 3 minutes", async () => {
     mockFetch((c) => Response.json(payload(c as keyof typeof FILES, "2026-11-04T00:50:00.000Z")));
     render(<NationalView />);

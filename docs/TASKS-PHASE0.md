@@ -9,7 +9,7 @@ Tick boxes as you go; commit after each ticked item.
 - [x] Add: `zod`, `d3-geo`, `topojson-client`, `us-atlas`, `@supabase/supabase-js`, `vitest`, `@vitejs/plugin-react`, `playwright`
   - Playwright is installed as `@playwright/test@1.63.0` (bundles `playwright`; version matches the container's preinstalled Chromium). Also added `@vitest/coverage-v8` (for the §1 ≥90% gate), `jsdom` (component tests opt in per file), `@types/d3-geo`, `@types/topojson-*`, `@types/node@22` (Vitest 5 peer).
 - [x] `pnpm typecheck` / `lint` / `test` scripts; Vitest config; `.env.example` → `.env.local`
-  - Also `test:coverage` (thresholds 90% on `src/lib/**`) and `test:e2e` (`--pass-with-no-tests` until Phase 1). tsconfig adds `noUncheckedIndexedAccess`. `src/test/fixtures.ts` loads `docs/fixtures/*` for parser tests. `fixtures:refresh` is **not** added yet — it needs the §1 client.
+  - Also `test:coverage` (thresholds 90% on `src/lib/**`) and `test:e2e` (`--pass-with-no-tests` until Phase 1). tsconfig adds `noUncheckedIndexedAccess`. `src/test/fixtures.ts` loads `docs/fixtures/*` for parser tests. `pnpm fixtures:refresh` (`scripts/fixtures-refresh.mjs`) re-records fixtures one request at a time, ≥3 s apart, 30 s+ retry waits, never overwriting; `--dry-run` prints the plan. CI runs `pnpm test:coverage` so the 90% gate is enforced.
 - [x] GitHub Actions: typecheck + lint + test on push
   - `.github/workflows/ci.yml`; also runs `pnpm build`.
 - [x] Commit: `chore: scaffold`
@@ -31,7 +31,8 @@ Tick boxes as you go; commit after each ticked item.
 
 ## 2. Cache + API routes (30 min)
 - [x] `src/lib/cache/swr.ts` — in-memory per-chamber cache, 45s TTL, serve stale on error, `asOf` timestamp
-  - Single-flight loads; 15 s error cooldown, which also makes cold misses fail fast instead of starting a new 5-attempt retry cycle per request (found live at 01:01Z).
+  - Single-flight loads. Error cooldown escalates per chamber — TTL (45 s), then ×2 per consecutive failure up to 5 min, reset on success — and applies to cold misses too, so an outage costs civicAPI **less** traffic than healthy operation (unit-tested over a simulated 30-min outage). The first version used a flat 15 s cooldown, which a self-review found produced ~5× healthy traffic during the outage.
+  - `asOf` = the earliest page pull in the load (not when the load finished). Snapshot writes run outside the cache load with a 20 s cap and a 10 s per-request DB timeout, so a slow database can't delay or freeze results.
 - [x] `GET /api/results?chamber=senate|house|governor|measures` → `{asOf, source, races[]}`; `GET /api/health`
   - Also `&state=XX` and `&scope=statewide`, both filtered from the cached list (no extra upstream calls). `races` = seats only; the national roll-up is returned separately as `aggregate`.
 - [ ] **Acceptance:** `curl localhost:3000/api/results?chamber=senate` returns 36 races with `asOf`; second call within 45s hits cache (log line)
@@ -47,7 +48,8 @@ Tick boxes as you go; commit after each ticked item.
 
 ## 4. National view (60 min) — Option B layout
 - [x] `/` — header with source badge + "as of" + next-refresh countdown; BoP bars (called solid, leading hatched, uncalled gap, majority tick); chamber tabs
-  - Senate holdovers derived from civicAPI's aggregate (34 D / 31 R before calls) and cross-checked. **Governors show races-up only (36):** no verified source for the 14 governors not up, so no "26 to win" bar.
+  - Senate = fixed not-up baseline (34 D / 31 R, from civicAPI's own pre-results national row) + this cycle's calls; the live aggregate is a real cross-check (a note appears on disagreement or when it is missing). Majority tick sits at the center line. **Governors show races-up only (36):** no verified source for the 14 governors not up, so no "26 to win" bar.
+  - Manual overrides (`overrides` table) are not read yet — they need the Supabase project. Until then "called" is civicAPI's winner flag only, and the UI says so.
 - [x] Tile-grid state map (`components/map/TileMap.tsx`, positions from `docs/mockups/*.dc.html` grid), colored by called status; "Show leading" toggle (default off)
   - House tab: per-state called/total seats; solid only on a full sweep. Tiles link to `/state/XX`.
 - [ ] "Expected before voting" chip per race from `/forecast/{chamber}/2026/civicapi` (rating + %) — cached 10 min

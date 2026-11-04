@@ -12,8 +12,10 @@ describe("BopBar", () => {
     expect(screen.getByText("36")).toBeInTheDocument();
     expect(screen.getByText("31")).toBeInTheDocument();
     expect(screen.getByRole("img")).toHaveAccessibleName(/Democrats 36, Republicans 31.*51 needed for a majority/);
-    expect(screen.getByTestId("majority-tick")).toHaveStyle({ left: "51%" });
-    expect(screen.getByTestId("bop-caption")).toHaveTextContent(/uncalled · 51 to win/);
+    // Center line: a party past it holds a majority from either side (R at 50 seats must not cross it).
+    expect(screen.getByTestId("majority-tick")).toHaveStyle({ left: "50%" });
+    // 35 up − 2 called (GA, VA) = 33 uncalled, leading races included.
+    expect(screen.getByTestId("bop-caption")).toHaveTextContent("33 uncalled · 51 to win (cross the center line)");
   });
 
   it("governors: no majority tick, races-up caption", () => {
@@ -24,7 +26,7 @@ describe("BopBar", () => {
   });
 
   it("says 'all called' when nothing is left", () => {
-    const m = { ...buildBop("house", [], null), total: 2, d: 1, r: 1 };
+    const m = { ...buildBop("house", [], null), total: 2, d: 1, r: 1, racesUp: 2, called: { D: 1, R: 1, I: 0, O: 0 } };
     render(<BopBar model={m} />);
     expect(screen.getByTestId("bop-caption")).toHaveTextContent("all called");
   });

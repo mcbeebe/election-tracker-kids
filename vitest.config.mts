@@ -11,7 +11,7 @@ export default defineConfig({
     // Server-side logic is the default; component tests opt in with
     // `// @vitest-environment jsdom` at the top of the file.
     environment: "node",
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],
     setupFiles: ["src/test/setup.ts"],
     exclude: ["node_modules/**", "e2e/**", ".next/**"],
     coverage: {

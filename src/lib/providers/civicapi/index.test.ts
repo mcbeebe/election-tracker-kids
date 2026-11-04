@@ -1,7 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { loadFixture } from "@/test/fixtures";
 import { CivicApiError } from "./client";
-import { CivicApiProvider, type CivicApiTransport, getCivicApiProvider, MAX_PAGES, SEARCH_PAGE_LIMIT } from "./index";
+import {
+  CivicApiProvider,
+  type CivicApiTransport,
+  getCivicApiProvider,
+  MAX_HEALTHY_ERROR_RATE,
+  MAX_PAGES,
+  SEARCH_HEALTHY_WITHIN_MS,
+  SEARCH_PAGE_LIMIT,
+} from "./index";
 
 type Query = Record<string, string | number | undefined>;
 type Handler = (path: string, q: Query) => unknown;
@@ -168,7 +176,7 @@ describe("CivicApiProvider.health", () => {
   it("is ok when /status answers ok, pinging once without retries", async () => {
     const { provider, t } = transport(() => ({ status: "ok" }));
     await provider.health();
-    expect(t.getJson).toHaveBeenCalledWith("/status", {}, { retry: false });
+    expect(t.getJson).toHaveBeenCalledWith("/status", {}, { retry: false, track: false });
     vi.mocked(t.stats).mockReturnValue({ lastOkAt: NOW.getTime(), lastLatencyMs: 120, lastError: null, errorRate: 0.1, attempts: 10 });
     expect(await provider.health()).toEqual({
       source: "civicapi",
@@ -179,6 +187,30 @@ describe("CivicApiProvider.health", () => {
       errorRate: 0.1,
       lastError: null,
     });
+  });
+
+  it("is NOT ok when /status is ok but searches are failing (election-night 00:46Z pattern)", async () => {
+    const { provider, t } = transport(() => ({ status: "ok" }));
+    vi.mocked(t.stats).mockReturnValue({ lastOkAt: null, lastLatencyMs: null, lastError: "http 502 (attempt 5)", errorRate: 1, attempts: 10 });
+    expect(await provider.health()).toMatchObject({ ok: false, lastError: "http 502 (attempt 5)", errorRate: 1 });
+  });
+
+  it("is NOT ok when the last successful search is too old, and explains why", async () => {
+    const { provider, t } = transport(() => ({ status: "ok" }));
+    vi.mocked(t.stats).mockReturnValue({
+      lastOkAt: NOW.getTime() - SEARCH_HEALTHY_WITHIN_MS - 1,
+      lastLatencyMs: 90,
+      lastError: null,
+      errorRate: 0,
+      attempts: 3,
+    });
+    expect(await provider.health()).toMatchObject({ ok: false, lastError: "no recent successful search" });
+  });
+
+  it("is NOT ok at the error-rate threshold even with a recent success", async () => {
+    const { provider, t } = transport(() => ({ status: "ok" }));
+    vi.mocked(t.stats).mockReturnValue({ lastOkAt: NOW.getTime(), lastLatencyMs: 90, lastError: "timeout (attempt 1)", errorRate: MAX_HEALTHY_ERROR_RATE, attempts: 4 });
+    expect((await provider.health()).ok).toBe(false);
   });
 
   it("reports the ping failure", async () => {

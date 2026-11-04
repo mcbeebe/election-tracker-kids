@@ -15,6 +15,21 @@ export const TILE_GRID: readonly (readonly [string, number, number])[] = [
   ["HI", 8, 1], ["TX", 8, 4], ["FL", 8, 9],
 ];
 
+/** Longest tile sub-line, in characters, that fits a ~49 px tile at 10 px monospace. */
+export const TILE_LINE_MAX = 7;
+
+/** Compact margin for tiles: `D+2.4`, `R+31`, `Even` (≤ {@link TILE_LINE_MAX} chars). */
+export function tileMargin(party: PartyKey, pts: number): string {
+  if (pts === 0) return "Even";
+  const label = party === "O" ? "O" : party;
+  return `${label}+${pts >= 10 ? Math.round(pts) : pts.toFixed(1)}`;
+}
+
+/** Compact % reporting for tiles: `31%`, `0.2%`. */
+export function tilePct(pct: number): string {
+  return pct > 0 && pct < 1 ? `${pct.toFixed(1)}%` : `${Math.round(pct)}%`;
+}
+
 /** Visual state of one tile. `leading` renders hatched, and only when "Show leading" is on. */
 export type TileState = "called" | "leading" | "counting" | "no_race";
 
@@ -25,8 +40,13 @@ export interface TileModel {
   col: number;
   state: TileState;
   party: PartyKey | null;
-  /** Short second line: `CALLED`, `D +2.4 · 31% in`, `12% in`, or seat counts for the House. */
+  /** Short second line: `CALLED`, a compact margin (`D+2.4`), `12% in`, or House `called/total`. */
   sub: string;
+  /**
+   * Optional third line. For leading tiles it is % reporting (`31%`), so the margin is never
+   * shown without it (non-negotiable #2). Lines are kept to {@link TILE_LINE_MAX} characters.
+   */
+  sub2: string | null;
   /** Full sentence for screen readers / tooltips. */
   label: string;
   /** House only: called seats by party and total seats in the state. */
@@ -47,7 +67,7 @@ export function buildStateTiles(races: readonly NormalizedRace[], showLeading: b
   return TILE_GRID.map(([code, row, col]) => {
     const rs = byState.get(code);
     if (!rs?.length) {
-      return { code, row, col, state: "no_race", party: null, sub: "—", label: `${code}: no race`, seats: null };
+      return { code, row, col, state: "no_race", party: null, sub: "—", sub2: null, label: `${code}: no race`, seats: null };
     }
     const race = pickRace(rs);
     const s = raceStatus(race);
@@ -55,7 +75,7 @@ export function buildStateTiles(races: readonly NormalizedRace[], showLeading: b
     if (s.status === "called") {
       const w = race.candidates.find((c) => c.id === s.winnerIds[0])!;
       return {
-        code, row, col, state: "called", party: w.partyKey, sub: "CALLED",
+        code, row, col, state: "called", party: w.partyKey, sub: "CALLED", sub2: null,
         label: `${race.name}: called for ${w.name} (${w.party}) by civicAPI, ${pct}`, seats: null,
       };
     }
@@ -63,13 +83,14 @@ export function buildStateTiles(races: readonly NormalizedRace[], showLeading: b
       const l = race.candidates.find((c) => c.id === s.leaderId)!;
       const m = formatMargin(l.partyKey, s.marginPct ?? 0);
       return {
-        code, row, col, state: "leading", party: l.partyKey, sub: `${m} · ${pct}`,
+        code, row, col, state: "leading", party: l.partyKey,
+        sub: tileMargin(l.partyKey, s.marginPct ?? 0), sub2: tilePct(race.percentReporting),
         label: `${race.name}: ${l.name} leads, ${m}, ${pct}, not called`, seats: null,
       };
     }
     const sub = s.status === "not_started" ? "—" : pct;
     return {
-      code, row, col, state: "counting", party: null, sub,
+      code, row, col, state: "counting", party: null, sub, sub2: null,
       label: `${race.name}: ${s.status === "not_started" ? "no results yet" : `counting, ${pct}`}`, seats: null,
     };
   });
@@ -102,6 +123,7 @@ export function buildHouseTiles(races: readonly NormalizedRace[]): TileModel[] {
       state: rs.length === 0 ? "no_race" : sweep ? "called" : "counting",
       party: sweep || null,
       sub: rs.length === 0 ? "—" : `${calledN}/${seats.total}`,
+      sub2: null,
       label: `${code} House: ${seats.D} D, ${seats.R} R${seats.other ? `, ${seats.other} other` : ""} called of ${seats.total} seats`,
       seats,
     };

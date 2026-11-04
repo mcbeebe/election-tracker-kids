@@ -14,7 +14,8 @@ export function StatusBanners({ fixtures, stale, oldest, failing }: StatusBanner
     <>
       {fixtures && (
         <div role="note" className="w-full border-b border-[#C9B8F0] bg-[#F1ECFF] px-4 py-2 text-sm sm:px-8">
-          Development mode: replaying recorded civicAPI responses from Nov 4, 00:49–01:01 UTC. Not live results.
+          Development mode: replaying recorded civicAPI responses. Each panel&apos;s &ldquo;as of&rdquo; is when it was
+          recorded. Not live results.
         </div>
       )}
       {(stale || failing.length > 0) && (

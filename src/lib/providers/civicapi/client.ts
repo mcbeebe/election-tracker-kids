@@ -99,13 +99,16 @@ export class CivicApiClient {
    *
    * @param path - Path under the base URL, e.g. `/race/search`.
    * @param query - Query params; `undefined` values are dropped.
-   * @param opts - `retry: false` makes a single attempt (health pings must answer fast).
+   * @param opts - `retry: false` makes a single attempt (health pings must answer fast);
+   *   `track: false` keeps the call out of the rolling stats, so `/status` pings cannot mask
+   *   failing searches.
    * @returns Parsed JSON as `unknown` — callers must Zod-parse it.
    * @throws {@link CivicApiError} after retries are exhausted or on a non-retryable error.
    */
-  getJson(path: string, query: Query = {}, opts: { retry?: boolean } = {}): Promise<unknown> {
+  getJson(path: string, query: Query = {}, opts: { retry?: boolean; track?: boolean } = {}): Promise<unknown> {
     const url = this.buildUrl(path, query);
-    return withRetry((attempt) => this.attempt(url, attempt), {
+    const track = opts.track !== false;
+    return withRetry((attempt) => this.attempt(url, attempt, track), {
       delaysMs: opts.retry === false ? [] : this.opts.backoffMs,
       sleep: this.opts.sleep,
       isRetryable: (e) => e instanceof CivicApiError && e.retryable,
@@ -140,20 +143,22 @@ export class CivicApiClient {
     return url.toString();
   }
 
-  private async attempt(url: string, attempt: number): Promise<unknown> {
-    await this.bucket.take();
+  private async attempt(url: string, attempt: number, track: boolean): Promise<unknown> {
+    // Jitter before taking the token: the fetch then starts right after the grant, so starts
+    // stay ≥ minIntervalMs apart (jitter after the grant could pull two starts ~750 ms apart).
     const jitter = Math.floor(this.opts.random() * this.opts.maxJitterMs);
     if (jitter > 0) await this.opts.sleep(jitter);
+    await this.bucket.take();
 
     const started = this.opts.now();
     try {
       const body = await this.fetchText(url);
       const json = parseBody(body);
-      this.record(true, started, null);
+      if (track) this.record(true, started, null);
       return json;
     } catch (e) {
       const err = e instanceof CivicApiError ? e : new CivicApiError("network", String(e));
-      this.record(false, started, `${err.kind}${err.status ? ` ${err.status}` : ""} (attempt ${attempt})`);
+      if (track) this.record(false, started, `${err.kind}${err.status ? ` ${err.status}` : ""} (attempt ${attempt})`);
       throw err;
     }
   }

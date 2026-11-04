@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:e2e": "playwright test --pass-with-no-tests"
+    "test:e2e": "playwright test --pass-with-no-tests",
+    "fixtures:refresh": "node scripts/fixtures-refresh.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

@@ -11,7 +11,10 @@ import type { Chamber, NormalizedRace, ProviderHealth, ProviderId, ResultsProvid
 export interface ResultsPayload {
   chamber: Chamber;
   source: ProviderId;
-  /** When this data was pulled from the source (ISO). The "as of" on every panel. */
+  /**
+   * When this data was pulled from the source (ISO): the earliest page fetch of the load, so a
+   * slow multi-page pull never claims fresher data than its oldest rows.
+   */
   asOf: string;
   /** When this response was produced (ISO). */
   servedAt: string;
@@ -36,7 +39,10 @@ export interface ResultsFilter {
   scope?: "all" | "statewide";
 }
 
-/** Called after every successful upstream refresh (Phase 0 §3 snapshots plug in here). */
+/**
+ * Called after every successful upstream refresh (Phase 0 §3 snapshots plug in here). Runs
+ * outside the cache load; `fetchedAt` is the earliest pull time in the batch.
+ */
 export type RefreshHook = (chamber: Chamber, races: NormalizedRace[], fetchedAt: Date) => Promise<void>;
 
 /** Options for {@link ResultsService}. */
@@ -46,6 +52,8 @@ export interface ResultsServiceOptions {
   healthTtlMs?: number;
   now?: () => number;
   onRefresh?: RefreshHook;
+  /** Upper bound for one snapshot write; it is abandoned (and logged) after this. Default 20 s. */
+  snapshotTimeoutMs?: number;
 }
 
 /** Return of {@link ResultsService.getResults}: payload plus any background refresh to keep alive. */
@@ -64,12 +72,16 @@ export class ResultsService {
   private readonly healthCache: SwrCache<ProviderHealth>;
   private readonly now: () => number;
   private readonly onRefresh: RefreshHook | undefined;
+  private readonly snapshotTimeoutMs: number;
+  /** Snapshot writes in flight. Kept out of the cache load so a slow DB never delays results. */
+  private readonly writes = new Set<Promise<void>>();
 
   /** @param opts - See {@link ResultsServiceOptions}. */
   constructor(opts: ResultsServiceOptions) {
     this.provider = opts.provider;
     this.now = opts.now ?? Date.now;
     this.onRefresh = opts.onRefresh;
+    this.snapshotTimeoutMs = opts.snapshotTimeoutMs ?? 20_000;
     const onEvent = (e: SwrEvent) => logCacheEvent("results", e);
     this.cache = new SwrCache({ ttlMs: opts.ttlMs, now: this.now, onEvent });
     this.healthCache = new SwrCache({ ttlMs: opts.healthTtlMs ?? 30_000, now: this.now });
@@ -98,7 +110,7 @@ export class ResultsService {
       payload: {
         chamber,
         source: this.provider.id,
-        asOf: new Date(r.loadedAt).toISOString(),
+        asOf: new Date(earliestFetch(r.value) ?? r.loadedAt).toISOString(),
         servedAt: new Date(this.now()).toISOString(),
         stale: r.stale,
         cache: r.outcome,
@@ -106,7 +118,7 @@ export class ResultsService {
         races,
         aggregate,
       },
-      refresh: r.refresh,
+      refresh: this.background(r.refresh),
     };
   }
 
@@ -118,22 +130,62 @@ export class ResultsService {
 
   private async load(chamber: Chamber): Promise<NormalizedRace[]> {
     const races = await this.provider.listRaces({ chamber });
-    if (this.onRefresh) {
-      try {
-        await this.onRefresh(chamber, races, new Date(this.now()));
-      } catch (e) {
-        // Snapshot failures must never block serving results.
-        log("error", "results.on_refresh_failed", { chamber, error: e instanceof Error ? e.message : String(e) });
-      }
-    }
+    if (this.onRefresh) this.track(this.persist(this.onRefresh, chamber, races));
     return races;
   }
+
+  /** Run the snapshot hook with a timeout. Never rejects: failures are logged, results are unaffected. */
+  private async persist(hook: RefreshHook, chamber: Chamber, races: NormalizedRace[]): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`snapshot write timed out after ${this.snapshotTimeoutMs}ms`)), this.snapshotTimeoutMs);
+    });
+    try {
+      await Promise.race([hook(chamber, races, new Date(earliestFetch(races) ?? this.now())), timeout]);
+    } catch (e) {
+      log("error", "results.on_refresh_failed", { chamber, error: e instanceof Error ? e.message : String(e) });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  private track(p: Promise<void>): void {
+    this.writes.add(p);
+    void p.finally(() => this.writes.delete(p));
+  }
+
+  /**
+   * Work the route must keep alive after responding (`after()`): the upstream refresh, then
+   * any snapshot writes it (or an earlier load) started.
+   */
+  private background(refresh: Promise<void> | null): Promise<void> | null {
+    if (!refresh && this.writes.size === 0) return null;
+    return (refresh ?? Promise.resolve())
+      .then(() => Promise.allSettled([...this.writes]))
+      .then(() => undefined);
+  }
+}
+
+/** Earliest `fetchedAt` across races (epoch ms): the honest "as of" for a multi-page pull. */
+function earliestFetch(races: readonly NormalizedRace[]): number | null {
+  let min: number | null = null;
+  for (const r of races) {
+    const t = Date.parse(r.fetchedAt);
+    if (!Number.isNaN(t) && (min === null || t < min)) min = t;
+  }
+  return min;
 }
 
 function logCacheEvent(scope: string, e: SwrEvent): void {
   if (e.type === "get") log("info", `${scope}.cache`, { key: e.key, outcome: e.outcome, ageMs: e.ageMs });
   else if (e.type === "refresh_ok") log("info", `${scope}.refresh_ok`, { key: e.key, durationMs: e.durationMs });
-  else log("warn", `${scope}.refresh_error`, { key: e.key, error: e.error });
+  else
+    log("warn", `${scope}.refresh_error`, {
+      key: e.key,
+      error: e.error,
+      consecutiveFailures: e.consecutiveFailures,
+      nextTryInMs: e.cooldownMs,
+    });
 }
 
 let singleton: ResultsService | null = null;
@@ -142,10 +194,11 @@ let singleton: ResultsService | null = null;
 export function getResultsService(): ResultsService {
   if (!singleton) {
     const cfg = loadServerConfig();
-    const db = getServerDb();
-    if (!db) log("warn", "results.snapshots_disabled", { reason: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set" });
     const provider = cfg.RESULTS_PROVIDER === "fixtures" ? new FixtureProvider() : getCivicApiProvider();
-    if (provider.id === "fixtures") log("warn", "results.fixture_provider", { note: "replaying recorded fixtures" });
+    // Recorded replays must never land in the snapshots that replay and backtests depend on.
+    const db = provider.id === "fixtures" ? null : getServerDb();
+    if (provider.id === "fixtures") log("warn", "results.fixture_provider", { note: "replaying recorded fixtures; snapshots off" });
+    else if (!db) log("warn", "results.snapshots_disabled", { reason: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set" });
     singleton = new ResultsService({
       provider,
       ttlMs: cfg.RESULTS_TTL_SECONDS * 1000,

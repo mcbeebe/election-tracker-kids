@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { cand } from "@/test/factories";
 import { race } from "@/test/fake-provider";
 import { HOUSE_LIVE, SENATE_LIVE, splitFixture } from "@/test/live-fixtures";
-import { buildHouseTiles, buildStateTiles, closestRaces, TILE_GRID, tileColors } from "./tiles";
+import { buildHouseTiles, buildStateTiles, closestRaces, TILE_GRID, TILE_LINE_MAX, tileColors, tileMargin, tilePct } from "./tiles";
 
 describe("TILE_GRID", () => {
   it("has the 50 states once each, with unique cells", () => {
@@ -34,8 +34,19 @@ describe("buildStateTiles (live Senate fixture)", () => {
     const lead = tiles.filter((t) => t.state === "leading");
     expect(lead.length).toBeGreaterThan(0);
     for (const t of lead) {
-      expect(t.sub).toMatch(/^(D|R|I|Other) \+\d+\.\d · \d+(\.\d)?% in$|^Even/);
+      // Margin and % reporting each get their own short line, so neither can be cut off.
+      expect(t.sub).toMatch(/^((D|R|I|O)\+\d+(\.\d)?|Even)$/);
+      expect(t.sub2).toMatch(/^\d+(\.\d)?%$/);
       expect(t.label).toContain("not called");
+    }
+  });
+
+  it("no tile line is longer than TILE_LINE_MAX characters (nothing gets truncated)", () => {
+    for (const showLeading of [true, false]) {
+      for (const t of [...buildStateTiles(seats, showLeading), ...buildHouseTiles(splitFixture(HOUSE_LIVE).seats)]) {
+        expect(t.sub.length).toBeLessThanOrEqual(TILE_LINE_MAX);
+        expect((t.sub2 ?? "").length).toBeLessThanOrEqual(TILE_LINE_MAX);
+      }
     }
   });
 
@@ -64,7 +75,7 @@ describe("buildStateTiles (live Senate fixture)", () => {
       ],
       true,
     );
-    expect(tiles.find((t) => t.code === "OH")!.sub).toMatch(/^D \+1\.0/);
+    expect(tiles.find((t) => t.code === "OH")).toMatchObject({ sub: "D+1.0", sub2: "50%" });
     const allCalled = buildStateTiles(
       [
         race("x", { state: "OH", candidates: [cand("a", { votes: 9, winner: true })] }),
@@ -131,5 +142,17 @@ describe("closestRaces (live House fixture)", () => {
     const rows = closestRaces([race("1", { candidates: [cand("a", { votes: 5 })], totalVotes: 5 })], 1);
     expect(rows[0]).toMatchObject({ runnerUp: null, margin: "D +100.0" });
     expect(closestRaces([race("1", { candidates: [], totalVotes: 5 })])[0]!.margin).toBe("—");
+  });
+});
+
+describe("tileMargin / tilePct", () => {
+  it("are compact and keep one decimal under 10 points", () => {
+    expect(tileMargin("D", 5.44)).toBe("D+5.4");
+    expect(tileMargin("R", 31.1)).toBe("R+31");
+    expect(tileMargin("O", 2)).toBe("O+2.0");
+    expect(tileMargin("I", 0)).toBe("Even");
+    expect(tilePct(13.4)).toBe("13%");
+    expect(tilePct(0.24)).toBe("0.2%");
+    expect(tilePct(0)).toBe("0%");
   });
 });
