@@ -9,7 +9,7 @@ Senate, House, Governors, and ballot measures. Personal project.
 
 ## Status
 
-`v0.1` — plan and mockups under review. No application code yet.
+Phase 0 in progress — §0 scaffold done (Next.js 15, TypeScript strict, Tailwind, Vitest, CI). See [`docs/TASKS-PHASE0.md`](docs/TASKS-PHASE0.md).
 
 ## Data provenance
 

@@ -4,11 +4,15 @@ Order matters: data layer first, UI second, deploy as soon as /api/results retur
 Tick boxes as you go; commit after each ticked item.
 
 ## 0. Scaffold (20 min)
-- [ ] `pnpm create next-app@latest . --ts --tailwind --app --eslint --src-dir` (Next 15, App Router)
-- [ ] Add: `zod`, `d3-geo`, `topojson-client`, `us-atlas`, `@supabase/supabase-js`, `vitest`, `@vitejs/plugin-react`, `playwright`
-- [ ] `pnpm typecheck` / `lint` / `test` scripts; Vitest config; `.env.example` → `.env.local`
-- [ ] GitHub Actions: typecheck + lint + test on push
-- [ ] Commit: `chore: scaffold`
+- [x] `pnpm create next-app@latest . --ts --tailwind --app --eslint --src-dir` (Next 15, App Router)
+  - Pinned `create-next-app@15.5.29` → `next@15.5.29` (`@latest` is now 16.x; CLAUDE.md requires 15). Scaffolded in a temp dir and copied in, because create-next-app refuses a folder containing `CLAUDE.md`/`README.md`. Fonts switched to the Option B stack (Source Serif 4 / Source Sans 3 / IBM Plex Mono); party color tokens added to `globals.css`.
+- [x] Add: `zod`, `d3-geo`, `topojson-client`, `us-atlas`, `@supabase/supabase-js`, `vitest`, `@vitejs/plugin-react`, `playwright`
+  - Playwright is installed as `@playwright/test@1.63.0` (bundles `playwright`; version matches the container's preinstalled Chromium). Also added `@vitest/coverage-v8` (for the §1 ≥90% gate), `jsdom` (component tests opt in per file), `@types/d3-geo`, `@types/topojson-*`, `@types/node@22` (Vitest 5 peer).
+- [x] `pnpm typecheck` / `lint` / `test` scripts; Vitest config; `.env.example` → `.env.local`
+  - Also `test:coverage` (thresholds 90% on `src/lib/**`) and `test:e2e` (`--pass-with-no-tests` until Phase 1). tsconfig adds `noUncheckedIndexedAccess`. `src/test/fixtures.ts` loads `docs/fixtures/*` for parser tests. `fixtures:refresh` is **not** added yet — it needs the §1 client.
+- [x] GitHub Actions: typecheck + lint + test on push
+  - `.github/workflows/ci.yml`; also runs `pnpm build`.
+- [x] Commit: `chore: scaffold`
 
 ## 1. Provider layer (60 min)
 - [ ] `src/lib/providers/types.ts` — `ResultsProvider`, `NormalizedRace`, `NormalizedCandidate`, `RaceScope`, `ProviderHealth` (+ JSDoc)
