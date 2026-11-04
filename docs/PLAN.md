@@ -1,6 +1,6 @@
-# Midterm Tracker — Plan v0.1
+# Midterm Tracker — Plan v0.2
 
-**Owner:** Mike Beebe · **Status:** Awaiting approval · **Date:** 2026-11-03 (Election Day)
+**Owner:** Mike Beebe · **Status:** Approved for Phase 0 · **Date:** 2026-11-03 (Election Day) · v0.1 archived in `docs/Archive/`
 **Repo:** `mcbeebe/midterm-tracker` (private) · **Audience:** personal use
 
 ---
@@ -20,6 +20,10 @@ never implies "leading = won," and captures every refresh so the night can be re
 | D3 | Scope: Senate + House + Governors + ballot measures |
 | D4 | Personal use only (no public distribution → no licensing exposure) |
 | D5 | Version control in GitHub `mcbeebe/midterm-tracker`; commit everything |
+| D6 | UI: Option B (editorial, light) as base · Kid Mode as a toggle · Option C table as "Grown-up" tab · Option A dropped |
+| D7 | Probabilities: show sourced forecasts + live markets + catch-up arithmetic now; build our own model in Phase 2 behind a validation gate (`docs/FORECAST-MODEL.md`) |
+| D8 | AI-written analysis ("What's moving this?") grounded only in our structured data, labeled "AI summary"; Phase 1 |
+| D9 | Development continues in Claude Code using `CLAUDE.md` + `docs/TASKS-PHASE0.md` |
 
 ## 3. Data sources — verified 2026-11-03 15:40–15:55 PT
 
@@ -160,13 +164,15 @@ Views, in priority order:
 
 ## 10. Non-goals
 
-- Making our own race calls or projections.
+- Making our own race **calls**. (Probabilities are shown — sourced now, our own model only after the §7 validation gate in `docs/FORECAST-MODEL.md`.)
+- Using news or social sentiment as a model input.
 - Public distribution (would require licensing review and attribution).
 - District-shape House map tonight.
 
-## 11. Open questions for Mike
+## 11. Open items
 
-1. Approve Phase 0 scope and a mockup option (A/B/C)?
-2. Supabase: use an existing project or create `midterm-tracker`? (Free tier is fine.)
-3. Vercel: deploy under your existing account (`mcbeebe`)?
-4. Any specific watchlist races to seed (CA House seats, specific Props, Senate races)?
+1. GitHub repo `mcbeebe/midterm-tracker` — Mike creating; attach + push when ready.
+2. Supabase project — new vs. existing (unanswered; Phase 0 §3 can be skipped and backfilled).
+3. Anthropic API key for Phase 1 AI summaries — Mike obtaining.
+4. Watchlist races to seed.
+5. Plain-language rewrites of CA/Oakland ballot questions for Kid Mode — Mike authors.
