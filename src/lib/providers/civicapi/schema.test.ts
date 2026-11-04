@@ -10,6 +10,7 @@ const SEARCH_FIXTURES = [
   ["civicapi_search_us_senate.json", 36],
   ["civicapi_search_governor.json", 39],
   ["civicapi_search_us_senate_2026-11-04T0054Z.json", 36],
+  ["civicapi_search_us_senate_2026-11-04T0238Z.json", 36],
   ["civicapi_search_house_2026-11-04T0049Z.json", 436],
   ["civicapi_search_proposition_2026-11-04T0100Z.json", 99],
   // `count` is the page size, not the total: both Referendum pages report 500.

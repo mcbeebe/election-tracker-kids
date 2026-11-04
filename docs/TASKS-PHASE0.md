@@ -20,6 +20,7 @@ Tick boxes as you go; commit after each ticked item.
 - [x] `src/lib/providers/civicapi/schema.ts` — Zod schemas for search result + race detail (derive from `docs/fixtures/*.json`)
   - Two new fixtures recorded tonight (House search, live Senate search); see DATA-SOURCES.md § Fixtures.
 - [x] `src/lib/providers/civicapi/client.ts` — fetch with 8s timeout, ≤1 req/s token bucket + jitter, backoff 1s→2s→4s→8s on 5xx/empty body, `User-Agent: election-tracker-kids/0.1 (personal)`
+  - **Timeout is 60 s, not 8 s** (`CIVICAPI_TIMEOUT_MS`): live on 2026-11-04 02:38Z civicAPI answered full searches after ~49 s, so 8 s could never succeed. A timed-out call is retried only once; fast failures keep 1→2→4→8 s.
   - Also retries 429, invalid/truncated JSON, timeouts and network errors; other 4xx fail fast. `CIVICAPI_MIN_INTERVAL_MS` < 1000 is rejected by config. Bucket is per process (one per serverless instance).
 - [x] `src/lib/providers/civicapi/index.ts` — `listRaces({chamber})` using exact type strings (see CLAUDE.md gotchas); paginate `Referendum` with `offset`
   - Pagination stops on a short page, a repeated page (offset ignored → warn), or 10 pages. **Not yet verified live:** `Referendum`/`Proposition` payloads (civicAPI 502s at record time) — recorder still retrying; verify measure shape before §5.
@@ -35,8 +36,9 @@ Tick boxes as you go; commit after each ticked item.
   - `asOf` = the earliest page pull in the load (not when the load finished). Snapshot writes run outside the cache load with a 20 s cap and a 10 s per-request DB timeout, so a slow database can't delay or freeze results.
 - [x] `GET /api/results?chamber=senate|house|governor|measures` → `{asOf, source, races[]}`; `GET /api/health`
   - Also `&state=XX` and `&scope=statewide`, both filtered from the cached list (no extra upstream calls). `races` = seats only; the national roll-up is returned separately as `aggregate`.
-- [ ] **Acceptance:** `curl localhost:3000/api/results?chamber=senate` returns 36 races with `asOf`; second call within 45s hits cache (log line)
-  - **Not yet verified live.** civicAPI `/race/search` returned 502/503/timeouts on every call from 01:01Z to at least 01:25Z (`/status` = 200 throughout). Verified against the real failure: 5 attempts at 1/2/4/8 s, then 503 + `Retry-After`; second call fails fast (25 ms). Cache-hit log line verified in unit tests. Expect **35 races + `aggregate`**, not 36 (the 36th row is the national roll-up).
+- [x] **Acceptance:** `curl localhost:3000/api/results?chamber=senate` returns 36 races with `asOf`; second call within 45s hits cache (log line)
+  - **Verified live 2026-11-04 02:40Z:** first call 200 in 41.6 s (two fast 502s retried, then success) with **35 seat races + `aggregate` 87528** (the 36th row is the national roll-up) and `asOf`; second call 5 s later 200 in 18 ms, `cache: "hit"`, log line `results.cache … outcome:"hit", ageMs:5038`.
+  - Earlier history: civicAPI `/race/search` returned 502/503/timeouts on every call from 01:01Z to at least 01:25Z (`/status` = 200 throughout). Verified against the real failure: 5 attempts at 1/2/4/8 s, then 503 + `Retry-After`; second call fails fast (25 ms). Cache-hit log line verified in unit tests. Expect **35 races + `aggregate`**, not 36 (the 36th row is the national roll-up).
 
 ## 3. Supabase snapshots (30 min) — skip to §4 if blocked, come back
 - [x] `supabase/migrations/0001_init.sql` — `races, candidates, snapshots, overrides, provider_health` (see PLAN.md §5) + indexes
@@ -57,8 +59,10 @@ Tick boxes as you go; commit after each ticked item.
 - [x] Closest-races list (sorted by |margin|, with % reporting)
   - Uncalled only; shows the arithmetic verdict (Too early/Open/Likely/Locked) with a caveat marker for unreliable estimates.
 - [x] Client polls `/api/results` every 45s; shows stale banner if `asOf` > 3 min old
-- [ ] **Acceptance:** 3 races spot-checked vs civicapi.org; renders at 390px; Lighthouse a11y ≥ 90
-  - 390px ✓ (no horizontal scroll). Lighthouse a11y **100** desktop + mobile. **Spot-check pending** (civicAPI down) — UI QA was done with `RESULTS_PROVIDER=fixtures` (dev-only replay of recorded payloads).
+- [x] **Acceptance:** 3 races spot-checked vs civicapi.org; renders at 390px; Lighthouse a11y ≥ 90
+  - 390px ✓ (no horizontal scroll). Lighthouse a11y **100** desktop + mobile (after a WCAG 2.5.3 label fix on map tiles).
+  - Spot-check against civicAPI's `/race/{id}` detail, 2026-11-04 02:42–02:45Z: **Georgia US Senate**, **Georgia US House 1** and **Florida US Senate Special** match exactly (every candidate's votes, share and winner flag) when compared at the same update time. Search rounds `% reporting` to whole numbers (74 vs 73.5 in detail).
+  - The Senate cross-check fired on live data: civicAPI's national row says D 45 while its race flags give 42 (R matches). The app shows 42 with the disagreement note.
 
 ## 5. Measures + State views (45 min)
 - [x] `/measures` — table with state filter + search; yes/no bar; % reporting

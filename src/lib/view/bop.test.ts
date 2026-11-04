@@ -47,6 +47,19 @@ describe("buildBop — Senate (real fixtures)", () => {
   });
 });
 
+describe("buildBop — Senate 02:38Z (12 calls, real disagreement)", () => {
+  it("counts per-race calls and flags civicAPI's national row, which shows 3 more D seats than its own race flags", () => {
+    const { seats, aggregate } = splitFixture("civicapi_search_us_senate_2026-11-04T0238Z.json");
+    const m = buildBop("senate", seats, aggregate);
+    // Race rows: 8 D calls (MA NC DE VA RI NJ NH GA), 4 R calls (KY WY FL WV).
+    expect(m.called).toMatchObject({ D: 8, R: 4 });
+    expect({ d: m.d, r: m.r }).toEqual({ d: 42, r: 35 });
+    // civicAPI's national row says D=45, R=35: R agrees, D does not — the note must show.
+    expect(m.aggregateMismatch).toEqual(["D"]);
+    expect(m.aggregateSeats).toEqual({ D: 45, R: 35 });
+  });
+});
+
 describe("buildBop — House (real live fixture)", () => {
   it("435 up, majority 218, no holdovers, called + leading + uncalled = 435", () => {
     const { seats, aggregate } = splitFixture(HOUSE_LIVE);

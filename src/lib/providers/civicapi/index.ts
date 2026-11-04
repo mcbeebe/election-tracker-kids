@@ -154,7 +154,11 @@ export function getCivicApiProvider(): CivicApiProvider {
   if (!singleton) {
     const cfg = loadServerConfig();
     singleton = new CivicApiProvider({
-      client: new CivicApiClient({ baseUrl: cfg.CIVICAPI_BASE, minIntervalMs: cfg.CIVICAPI_MIN_INTERVAL_MS }),
+      client: new CivicApiClient({
+        baseUrl: cfg.CIVICAPI_BASE,
+        minIntervalMs: cfg.CIVICAPI_MIN_INTERVAL_MS,
+        timeoutMs: cfg.CIVICAPI_TIMEOUT_MS,
+      }),
     });
   }
   return singleton;

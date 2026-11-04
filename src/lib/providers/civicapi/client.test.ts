@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeClock } from "@/test/fake-clock";
-import { CivicApiClient, CivicApiError, USER_AGENT } from "./client";
+import { CivicApiClient, CivicApiError, MAX_TIMEOUT_ATTEMPTS, USER_AGENT } from "./client";
 
 type Step = { status?: number; body?: string } | Error;
 
@@ -157,6 +157,38 @@ describe("CivicApiClient", () => {
       fetch: hung as unknown as typeof fetch,
     });
     await expect(c.getJson("/x")).rejects.toMatchObject({ kind: "timeout" });
+  });
+
+  it("retries a timeout only once, but keeps the full schedule for fast failures", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const hung = vi.fn(
+      (_: RequestInfo | URL, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+        }),
+    );
+    const clock = fakeClock(0);
+    const c = new CivicApiClient({
+      baseUrl: "https://civicapi.test",
+      minIntervalMs: 1000,
+      timeoutMs: 10,
+      random: () => 0,
+      fetch: hung as unknown as typeof fetch,
+      now: clock.now,
+      sleep: clock.sleep,
+    });
+    await expect(c.getJson("/x")).rejects.toMatchObject({ kind: "timeout" });
+    expect(hung).toHaveBeenCalledTimes(MAX_TIMEOUT_ATTEMPTS);
+    // A timeout followed by fast 502s still gets the rest of the schedule.
+    const mixed = client([{ status: 502 }, { status: 502 }, { body: "{}" }]);
+    await expect(mixed.c.getJson("/y")).resolves.toEqual({});
+  });
+
+  it("defaults to a 60 s timeout (election-night responses took ~49 s)", async () => {
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+    const c = new CivicApiClient({ baseUrl: "https://x.test", minIntervalMs: 1000, random: () => 0, fetch: (async () => new Response("{}")) as unknown as typeof fetch });
+    await c.getJson("/x");
+    expect(setTimeoutSpy.mock.calls.some(([, ms]) => ms === 60_000)).toBe(true);
   });
 
   it("wraps non-Error throws as network errors", async () => {

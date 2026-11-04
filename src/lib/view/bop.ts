@@ -26,7 +26,9 @@ export interface BopModel {
    * nothing to check against (no aggregate this refresh, or Governors); otherwise the parties
    * whose totals disagree (e.g. the aggregate lags a call by one refresh).
    */
-  aggregateMismatch: string[] | null;
+  aggregateMismatch: ("D" | "R")[] | null;
+  /** The source aggregate's own D/R seat totals, when present (for the disagreement note). */
+  aggregateSeats: { D: number; R: number } | null;
   /** True when this chamber has a source aggregate but it was missing from this refresh. */
   aggregateMissing: boolean;
 }
@@ -103,6 +105,7 @@ export function buildBop(
     d,
     r,
     aggregateMismatch,
+    aggregateSeats: aggSeats ? { D: aggSeats.D, R: aggSeats.R } : null,
     aggregateMissing: chamber !== "governor" && aggregate === null,
   };
 }

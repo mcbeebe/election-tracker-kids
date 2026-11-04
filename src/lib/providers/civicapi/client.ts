@@ -2,6 +2,9 @@ import { DEFAULT_BACKOFF_MS, withRetry } from "@/lib/cache/backoff";
 import { realSleep, TokenBucket } from "@/lib/cache/token-bucket";
 import { log } from "@/lib/log";
 
+/** Attempts allowed per call when they end in a timeout (each may take up to `timeoutMs`). */
+export const MAX_TIMEOUT_ATTEMPTS = 2;
+
 /** Sent on every request so the operator can identify us. Contains no personal data. */
 export const USER_AGENT = "election-tracker-kids/0.1 (personal)";
 
@@ -75,7 +78,7 @@ export class CivicApiClient {
   /** @param options - See {@link CivicApiClientOptions}. */
   constructor(options: CivicApiClientOptions) {
     this.opts = {
-      timeoutMs: 8000,
+      timeoutMs: 60_000,
       maxJitterMs: 250,
       backoffMs: DEFAULT_BACKOFF_MS,
       fetch: globalThis.fetch.bind(globalThis),
@@ -108,10 +111,14 @@ export class CivicApiClient {
   getJson(path: string, query: Query = {}, opts: { retry?: boolean; track?: boolean } = {}): Promise<unknown> {
     const url = this.buildUrl(path, query);
     const track = opts.track !== false;
+    let timeouts = 0;
     return withRetry((attempt) => this.attempt(url, attempt, track), {
       delaysMs: opts.retry === false ? [] : this.opts.backoffMs,
       sleep: this.opts.sleep,
-      isRetryable: (e) => e instanceof CivicApiError && e.retryable,
+      // A timeout already cost the server up to `timeoutMs` of work; retry those at most
+      // MAX_TIMEOUT_ATTEMPTS − 1 times. Fast failures (5xx, empty body) keep the full schedule.
+      isRetryable: (e) =>
+        e instanceof CivicApiError && e.retryable && (e.kind !== "timeout" || ++timeouts < MAX_TIMEOUT_ATTEMPTS),
       onRetry: ({ attempt, delayMs, error }) =>
         log("warn", "civicapi.retry", {
           url,

@@ -69,6 +69,16 @@ its calls come early, so always label them "called by civicAPI".
 - 2026-11-04 00:46–00:56Z (polls closing): `/status` stayed 200 while `/race/search` returned
   Cloudflare 502 (`error code: 502`, 16 bytes), 503, and 40 s zero-byte timeouts. Searches succeeded
   after 30–120 s backoff. `/status` is therefore **not** a reliable health signal for search.
+- 2026-11-04 02:36–02:44Z (recovery): a `limit=5` search answered 200 quickly, a full `limit=500`
+  Senate search answered 200 after **49 s** to first byte, and a `limit=50` search got a 502 in 0.5 s.
+  Responses were erratic rather than uniformly slow, so smaller pages do not help. The app's request
+  timeout is 60 s (`CIVICAPI_TIMEOUT_MS`); timeouts are retried only once.
+- The national row can disagree with the race rows. At 02:38Z and 02:45Z it showed **D 45**, while
+  34 not-up + 8 D winner flags = 42; Republicans matched exactly (31 + 4 = 35, then 31 + 5 = 36).
+  Which three seats it counts is not visible in the data. The app shows the per-race total (calls
+  are defined by winner flags) and displays a disagreement note.
+- Search results round `percent_reporting` to a whole number (74); `/race/{id}` returns the decimal
+  (73.5) for the same race at the same time. Votes, shares and winner flags matched exactly.
 
 ### Fixtures
 
@@ -79,6 +89,10 @@ its calls come early, so always label them "called by civicAPI".
 | `civicapi_race_87524_house_national.json` | 2026-11-03 15:50 PT | national House detail; has `region_results` |
 | `civicapi_search_house_2026-11-04T0049Z.json` | 2026-11-04 00:49Z | 87 races with votes, 15 called |
 | `civicapi_search_us_senate_2026-11-04T0054Z.json` | 2026-11-04 00:54Z | GA, VA called |
+| `civicapi_search_proposition_2026-11-04T0100Z.json` | 2026-11-04 01:00Z | 99 Propositions (CA propositions are under `Referendum`) |
+| `civicapi_search_referendum_offset0_2026-11-04T0100Z.json` | 2026-11-04 01:00Z | page 1 of `Referendum`; `count` = page size |
+| `civicapi_search_referendum_offset500_2026-11-04T0101Z.json` | 2026-11-04 01:01Z | page 2 of `Referendum` (distinct ids; offset works) |
+| `civicapi_search_us_senate_2026-11-04T0238Z.json` | 2026-11-04 02:38Z | 12 races called; answered after 49 s |
 
 ## State SoS / county sites (Phase 1)
 

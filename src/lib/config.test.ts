@@ -6,6 +6,7 @@ describe("loadServerConfig", () => {
     expect(loadServerConfig({})).toEqual({
       CIVICAPI_BASE: "https://civicapi.org/api/v2",
       CIVICAPI_MIN_INTERVAL_MS: 1000,
+      CIVICAPI_TIMEOUT_MS: 60_000,
       RESULTS_TTL_SECONDS: 45,
       RESULTS_PROVIDER: "civicapi",
     });
@@ -21,6 +22,12 @@ describe("loadServerConfig", () => {
 
   it("refuses an interval faster than 1 req/s", () => {
     expect(() => loadServerConfig({ CIVICAPI_MIN_INTERVAL_MS: "500" })).toThrow();
+  });
+
+  it("bounds the request timeout to 1 s – 120 s", () => {
+    expect(loadServerConfig({ CIVICAPI_TIMEOUT_MS: "30000" }).CIVICAPI_TIMEOUT_MS).toBe(30_000);
+    expect(() => loadServerConfig({ CIVICAPI_TIMEOUT_MS: "500" })).toThrow();
+    expect(() => loadServerConfig({ CIVICAPI_TIMEOUT_MS: "300000" })).toThrow();
   });
 
   it("rejects a non-URL base", () => {

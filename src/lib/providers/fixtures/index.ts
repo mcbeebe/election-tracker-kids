@@ -12,7 +12,7 @@ export interface FixtureFile {
 
 /** Newest recorded fixture(s) per chamber, replayed by {@link FixtureProvider}. */
 export const FIXTURE_FILES: Readonly<Record<Chamber, readonly FixtureFile[]>> = {
-  senate: [{ file: "civicapi_search_us_senate_2026-11-04T0054Z.json", recordedAt: "2026-11-04T00:54:00.000Z" }],
+  senate: [{ file: "civicapi_search_us_senate_2026-11-04T0238Z.json", recordedAt: "2026-11-04T02:38:00.000Z" }],
   house: [{ file: "civicapi_search_house_2026-11-04T0049Z.json", recordedAt: "2026-11-04T00:49:00.000Z" }],
   // Recorded before results ("~15:40 PT" on Nov 3 per DATA-SOURCES.md); no later governor recording exists.
   governor: [{ file: "civicapi_search_governor.json", recordedAt: "2026-11-03T23:40:00.000Z" }],

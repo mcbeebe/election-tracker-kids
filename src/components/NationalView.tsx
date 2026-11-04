@@ -92,8 +92,13 @@ export function NationalView() {
           )}
           {mismatch && (
             <p className="text-xs text-[#8A4B00]">
-              Note: our {TAB_LABEL[mismatch.chamber]} total disagrees with civicAPI&apos;s own tally for{" "}
-              {mismatch.aggregateMismatch!.join(", ")}.
+              Note: civicAPI&apos;s national {TAB_LABEL[mismatch.chamber]} tally says{" "}
+              {mismatch.aggregateMismatch!
+                .map((p) => `${p === "D" ? "Democrats" : "Republicans"} ${mismatch.aggregateSeats![p]}`)
+                .join(", ")}
+              , but its race-by-race calls add up to{" "}
+              {mismatch.aggregateMismatch!.map((p) => `${p === "D" ? mismatch.d : mismatch.r}`).join(", ")}. We show the
+              race-by-race total, because a call here means a winner flag on the race itself.
             </p>
           )}
         </section>

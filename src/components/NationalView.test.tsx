@@ -101,6 +101,19 @@ describe("NationalView", () => {
     expect(screen.getByRole("img", { name: /Senate: Democrats 36, Republicans 31/ })).toBeInTheDocument();
   });
 
+  it("explains a disagreement with civicAPI's national tally using both numbers", async () => {
+    mockFetch((c) => {
+      const p = payload(c as keyof typeof FILES, "2026-11-04T01:00:00.000Z");
+      if (c !== "senate") return Response.json(p);
+      const agg = { ...p.aggregate!, candidates: p.aggregate!.candidates.map((x) => (x.partyKey === "D" ? { ...x, seats: 39 } : x)) };
+      return Response.json({ ...p, aggregate: agg });
+    });
+    render(<NationalView />);
+    expect(
+      await screen.findByText(/national Senate tally says Democrats 39\s*, but its race-by-race calls add up to 36\. We show the race-by-race total/),
+    ).toBeInTheDocument();
+  });
+
   it("shows a stale banner when data is older than 3 minutes", async () => {
     mockFetch((c) => Response.json(payload(c as keyof typeof FILES, "2026-11-04T00:50:00.000Z")));
     render(<NationalView />);
