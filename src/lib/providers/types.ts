@@ -10,7 +10,7 @@ export type ProviderId = "civicapi" | "ca-sos" | "ddhq";
 export type Chamber = "senate" | "house" | "governor" | "measures";
 
 /** Every chamber, in display order. */
-export const CHAMBERS: readonly Chamber[] = ["senate", "house", "governor", "measures"] as const;
+export const CHAMBERS = ["senate", "house", "governor", "measures"] as const satisfies readonly Chamber[];
 
 /**
  * Party bucket used for color and seat math. Only D/R/I are distinguished;
@@ -67,6 +67,10 @@ export interface NormalizedRace {
   name: string;
   /** Source's raw type label (e.g. `US Senate`, `Referendum`). */
   sourceType: string;
+  /** Source's raw election type, e.g. `General`, `Statewide`, `Local` (measures). */
+  electionType: string;
+  /** Free-text locality for local ballot measures (county/city); `null` otherwise. */
+  locality: string | null;
   /** Precinct-based % reporting, 0–100. Not a share of expected votes. */
   percentReporting: number;
   totalVotes: number;

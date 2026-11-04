@@ -88,13 +88,49 @@ describe("normalizeSearchRace — fixtures", () => {
 
   it("search results carry no incumbency or source timestamp", () => {
     const r = normalizeAll("civicapi_search_governor.json")[0]!;
-    expect(r).toMatchObject({ sourceUpdatedAt: null, isDisputed: null, isTestData: null, fetchedAt: AT, source: "civicapi" });
+    expect(r).toMatchObject({ sourceUpdatedAt: null, isDisputed: null, isTestData: null, fetchedAt: AT, source: "civicapi", electionType: "Statewide" });
     expect(r.candidates[0]!.incumbent).toBeNull();
   });
 
   it("preserves source winner flags", () => {
     const called = normalizeAll(HOUSE).filter((r) => r.candidates.some((c) => c.winner));
     expect(called.length).toBeGreaterThan(0);
+  });
+});
+
+describe("normalizeSearchRace — ballot measures", () => {
+  const files = [
+    "civicapi_search_proposition_2026-11-04T0100Z.json",
+    "civicapi_search_referendum_offset0_2026-11-04T0100Z.json",
+    "civicapi_search_referendum_offset500_2026-11-04T0101Z.json",
+  ];
+
+  it("normalizes every recorded measure (free-text districts are localities, not codes)", () => {
+    const all = files.flatMap(normalizeAll);
+    expect(all).toHaveLength(1099);
+    expect(all.every((r) => r.chamber === "measures" && r.district === null && r.kind === "seat")).toBe(true);
+    expect(new Set(all.map((r) => r.electionType))).toEqual(new Set(["Statewide", "Local"]));
+  });
+
+  it("keeps the locality label for local measures", () => {
+    const local = normalizeAll(files[1]!).filter((r) => r.locality !== null);
+    expect(local.length).toBeGreaterThan(0);
+    expect(local.map((r) => r.locality)).toContain("Jasper");
+  });
+
+  it("falls back to municipality when district is null", () => {
+    const r = races(files[0]!)[0]!;
+    const res = normalizeSearchRace({ ...r, district: null, municipality: "Oakland" }, AT);
+    expect(res.ok && res.race.locality).toBe("Oakland");
+  });
+
+  it("statewide measures have no locality; Yes/No options map to party O", () => {
+    const mo = normalizeAll(files[1]!).find((r) => r.name === "Missouri Amendment 8")!;
+    expect(mo).toMatchObject({ locality: null, electionType: "Statewide", state: "MO" });
+    expect(mo.candidates.map((c) => [c.name, c.partyKey]).sort()).toEqual([
+      ["No", "O"],
+      ["Yes", "O"],
+    ]);
   });
 });
 
@@ -139,18 +175,27 @@ describe("normalizeRaceDetail", () => {
       isDisputed: false,
       isTestData: false,
       percentReporting: 0.24,
+      electionType: "General",
+      locality: null,
     });
     expect(res.race.candidates[0]!.incumbent).toBe(false);
   });
 
   it("maps absent optional fields to null", () => {
     const rest: typeof detail = { ...detail };
+    delete rest.election_scope;
     delete rest.is_disputed;
     delete rest.registered_voters;
     delete rest.test_data;
     delete rest.last_updated;
     const res = normalizeRaceDetail("1", rest, AT);
-    expect(res.ok && res.race).toMatchObject({ sourceUpdatedAt: null, registeredVoters: null, isDisputed: null, isTestData: null });
+    expect(res.ok && res.race).toMatchObject({
+      sourceUpdatedAt: null,
+      registeredVoters: null,
+      isDisputed: null,
+      isTestData: null,
+      electionType: "House of Representatives",
+    });
   });
 
   it("rejects untracked detail types", () => {

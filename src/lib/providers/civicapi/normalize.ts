@@ -49,6 +49,8 @@ interface Common {
   id: string;
   chamber: Chamber;
   sourceType: string;
+  electionType: string;
+  municipality: string | null;
   province: string;
   district: string | null;
   name: string;
@@ -62,8 +64,12 @@ function build(c: Common, extra: Pick<NormalizedRace, "sourceUpdatedAt" | "regis
   const kind = state === "US" ? "national_aggregate" : "seat";
   let district: number | null = null;
   let atLarge = false;
+  let locality: string | null = null;
 
-  if (kind === "seat") {
+  if (c.chamber === "measures") {
+    // Measure `district` is free text (a county/city name such as "Jasper"), not a district code.
+    locality = c.district ?? c.municipality;
+  } else if (kind === "seat") {
     if (c.district !== null) {
       const parsed = parseDistrict(c.district);
       if (!parsed) return { ok: false, reason: `unparseable district ${JSON.stringify(c.district)}` };
@@ -88,6 +94,8 @@ function build(c: Common, extra: Pick<NormalizedRace, "sourceUpdatedAt" | "regis
       atLarge,
       name: c.name,
       sourceType: c.sourceType,
+      electionType: c.electionType,
+      locality,
       percentReporting: c.percentReporting,
       totalVotes: candidates.reduce((s, x) => s + x.votes, 0),
       candidates,
@@ -111,6 +119,8 @@ export function normalizeSearchRace(r: SearchRace, fetchedAt: string): Normalize
       id: String(r.id),
       chamber,
       sourceType: r.type,
+      electionType: r.election_type,
+      municipality: r.municipality,
       province: r.province,
       district: r.district,
       name: r.election_name,
@@ -137,6 +147,8 @@ export function normalizeRaceDetail(id: string, d: RaceDetail, fetchedAt: string
       id,
       chamber,
       sourceType: d.election_type,
+      electionType: d.election_scope ?? d.election_type,
+      municipality: d.municipality,
       province: d.province,
       district: d.district,
       name: d.election_name,

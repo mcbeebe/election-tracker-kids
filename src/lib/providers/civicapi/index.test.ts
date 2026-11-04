@@ -71,6 +71,23 @@ describe("CivicApiProvider.listRaces", () => {
     expect(rs.every((r) => r.chamber === "measures")).toBe(true);
   });
 
+  it("pages real recorded Referendum fixtures (offset 0, 500) and merges Proposition", async () => {
+    const { provider, calls } = transport((_, q) => {
+      if (q.type === "Proposition") return loadFixture("civicapi_search_proposition_2026-11-04T0100Z.json");
+      if (q.offset === 0) return loadFixture("civicapi_search_referendum_offset0_2026-11-04T0100Z.json");
+      if (q.offset === 500) return loadFixture("civicapi_search_referendum_offset500_2026-11-04T0101Z.json");
+      return { count: 0, offset: q.offset, limit: 500, races: [] };
+    });
+    const rs = await provider.listRaces({ chamber: "measures" });
+    expect(calls.map((c) => [c.q.type, c.q.offset])).toEqual([
+      ["Referendum", 0],
+      ["Referendum", 500],
+      ["Referendum", 1000],
+      ["Proposition", 0],
+    ]);
+    expect(rs).toHaveLength(1099);
+  });
+
   it("stops (and warns) if the API ignores `offset` and repeats a page", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
     const full = Array.from({ length: SEARCH_PAGE_LIMIT }, (_, i) => measure(i + 1));
