@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeClock } from "@/test/fake-clock";
 import { fakeProvider, race } from "@/test/fake-provider";
-import { getResultsService, ResultsService } from "./service";
+import { FORECAST_TTL_MS, getResultsService, ResultsService } from "./service";
 
 const senate = [
   race("1", { state: "OH" }),
@@ -208,5 +208,29 @@ describe("getResultsService", () => {
   it("returns one shared instance with real defaults", () => {
     expect(getResultsService()).toBe(getResultsService());
     expect(new ResultsService({ provider: fakeProvider(), ttlMs: 1 })).toBeInstanceOf(ResultsService);
+  });
+});
+
+describe("ResultsService.getForecast", () => {
+  const forecast = { source: "civicapi" as const, pundit: "civicAPI", chamber: "senate" as const, lastUpdated: "2026-11-03", fetchedAt: "t", entries: {} };
+
+  it("caches forecasts for 10 minutes", async () => {
+    const clock = fakeClock(0);
+    const provider = { ...fakeProvider(), getForecast: vi.fn(async () => forecast) };
+    const service = new ResultsService({ provider, ttlMs: 45_000, now: clock.now });
+    await service.getForecast("senate");
+    clock.advance(FORECAST_TTL_MS - 1);
+    expect((await service.getForecast("senate")).stale).toBe(false);
+    expect(provider.getForecast).toHaveBeenCalledTimes(1);
+    clock.advance(1);
+    const r = await service.getForecast("senate");
+    expect(r.stale).toBe(true);
+    await r.refresh;
+    expect(provider.getForecast).toHaveBeenCalledTimes(2);
+  });
+
+  it("throws when the provider has no forecasts", async () => {
+    const service = new ResultsService({ provider: fakeProvider(), ttlMs: 45_000 });
+    await expect(service.getForecast("house")).rejects.toThrow("has no forecasts");
   });
 });

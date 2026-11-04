@@ -51,6 +51,10 @@ states{XX:{rating, democrat_pct, republican_pct, independent_pct, incumbent_part
 map, factor_weights, sources{expert_ratings[], betting_markets[kalshi,polymarket,predictit], polls, fundraising},
 monte_carlo{simulations, expected_*_seats, p5/p50/p95, majority_threshold}, distribution{bins[]}`.
 `kalshi` pundit returns the same shape (market-implied). `polymarket` returned 502 at probe time.
+Verified 2026-11-04 03:01–03:05Z for `civicapi`: each `states[KEY]` has `rating`, `democrat_pct`,
+`republican_pct`, `independent_pct` (win probabilities, summing to 100), `*_margin` (null), `incumbent_party`
+and candidate names. House keys are seat codes (`CA-07`, `AK-AL`). The endpoint 502/500'd several times
+before each success.
 
 ### National aggregate rows (verified 2026-11-04 00:54Z)
 
@@ -92,6 +96,10 @@ its calls come early, so always label them "called by civicAPI".
 | `civicapi_search_proposition_2026-11-04T0100Z.json` | 2026-11-04 01:00Z | 99 Propositions (CA propositions are under `Referendum`) |
 | `civicapi_search_referendum_offset0_2026-11-04T0100Z.json` | 2026-11-04 01:00Z | page 1 of `Referendum`; `count` = page size |
 | `civicapi_search_referendum_offset500_2026-11-04T0101Z.json` | 2026-11-04 01:01Z | page 2 of `Referendum` (distinct ids; offset works) |
+| `civicapi_search_referendum_offset1000_2026-11-04T0305Z.json` | 2026-11-04 03:05Z | page 3 of `Referendum` is also full (500), so there are 4+ pages |
+| `civicapi_forecast_senate_2026-11-04T0301Z.json` | 2026-11-04 03:01Z | 35 entries keyed by state; `last_updated` 2026-11-03 |
+| `civicapi_forecast_house_2026-11-04T0303Z.json` | 2026-11-04 03:03Z | 435 entries keyed `CA-07` / `AK-AL` |
+| `civicapi_forecast_governor_2026-11-04T0305Z.json` | 2026-11-04 03:05Z | 36 entries (states only, no territories) |
 | `civicapi_search_us_senate_2026-11-04T0238Z.json` | 2026-11-04 02:38Z | 12 races called; answered after 49 s |
 
 ## State SoS / county sites (Phase 1)

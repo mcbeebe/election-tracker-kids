@@ -1,6 +1,8 @@
 import { PARTY_COLORS } from "@/lib/normalize/party";
 import { formatReporting } from "@/lib/view/format";
+import type { NormalizedForecast } from "@/lib/providers/types";
 import type { CloseRace } from "@/lib/view/tiles";
+import { ForecastBadge } from "./ForecastBadge";
 
 const VERDICT: Record<CloseRace["arithmetic"], string> = {
   too_early: "Too early",
@@ -10,7 +12,7 @@ const VERDICT: Record<CloseRace["arithmetic"], string> = {
 };
 
 /** Closest uncalled races, smallest margin first, each with % reporting next to the margin. */
-export function ClosestRaces({ rows }: { rows: CloseRace[] }) {
+export function ClosestRaces({ rows, forecast }: { rows: CloseRace[]; forecast?: NormalizedForecast }) {
   if (rows.length === 0) {
     return <p className="text-sm text-[#5B6274]">No uncalled races with votes counted yet.</p>;
   }
@@ -37,6 +39,7 @@ export function ClosestRaces({ rows }: { rows: CloseRace[] }) {
               </span>
               <Side c={b} align="right" />
             </div>
+            <ForecastBadge forecast={forecast} forecastKey={r.forecastKey} />
           </li>
         );
       })}

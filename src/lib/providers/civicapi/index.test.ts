@@ -251,3 +251,25 @@ describe("getCivicApiProvider", () => {
     expect(Date.parse((await p.health()).checkedAt)).toBeGreaterThan(0);
   });
 });
+
+describe("CivicApiProvider.getForecast", () => {
+  it("requests the civicapi pundit for the chamber and normalizes it", async () => {
+    const { provider, calls } = transport(() => loadFixture("civicapi_forecast_senate_2026-11-04T0301Z.json"));
+    const f = await provider.getForecast("senate");
+    expect(calls[0]!.path).toBe("/forecast/senate/2026/civicapi");
+    expect(Object.keys(f.entries)).toHaveLength(35);
+    expect(f.fetchedAt).toBe(NOW.toISOString());
+  });
+
+  it("logs skipped entries", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const { provider } = transport(() => ({ pundit: "p", chamber: "House", year: 2026, last_updated: "d", has_percentages: true, states: { "CA-01": { rating: 3 } } }));
+    expect(Object.keys((await provider.getForecast("house")).entries)).toEqual([]);
+    expect(String(warn.mock.calls[0]![0])).toContain("civicapi.forecast_entries_skipped");
+  });
+
+  it("throws on an invalid envelope", async () => {
+    const { provider } = transport(() => ({ nope: true }));
+    await expect(provider.getForecast("governor")).rejects.toThrow();
+  });
+});

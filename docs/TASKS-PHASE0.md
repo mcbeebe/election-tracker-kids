@@ -54,8 +54,8 @@ Tick boxes as you go; commit after each ticked item.
   - Manual overrides (`overrides` table) are not read yet — they need the Supabase project. Until then "called" is civicAPI's winner flag only, and the UI says so.
 - [x] Tile-grid state map (`components/map/TileMap.tsx`, positions from `docs/mockups/*.dc.html` grid), colored by called status; "Show leading" toggle (default off)
   - House tab: per-state called/total seats; solid only on a full sweep. Tiles link to `/state/XX`.
-- [ ] "Expected before voting" chip per race from `/forecast/{chamber}/2026/civicapi` (rating + %) — cached 10 min
-  - **Not built:** `/forecast/*` returned 500/502 on every attempt since 01:16Z, so the shape is unverified and no fixture exists.
+- [x] "Expected before voting" chip per race from `/forecast/{chamber}/2026/civicapi` (rating + %) — cached 10 min
+  - Shape verified from fixtures recorded 2026-11-04 03:01–03:05Z (Senate 35 / House 435 / Governor 36 entries, keyed by state or `CA-07`/`AK-AL`; `%` are win probabilities summing to 100). Served by `/api/forecast` (10-min server cache, 5-min CDN cache). Chip on closest races and state race tables: neutral dashed outline, "Before voting: Lean D · D 72%", screen-reader text says "Not a result". A missing or malformed forecast just hides the chip (live: the Governor forecast 503'd and the page was unaffected).
 - [x] Closest-races list (sorted by |margin|, with % reporting)
   - Uncalled only; shows the arithmetic verdict (Too early/Open/Likely/Locked) with a caveat marker for unreliable estimates.
 - [x] Client polls `/api/results` every 45s; shows stale banner if `asOf` > 3 min old

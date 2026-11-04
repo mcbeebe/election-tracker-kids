@@ -76,8 +76,27 @@ export const RaceDetailSchema = z.object({
   candidates: z.array(DetailCandidateSchema),
 });
 
+/** One entry of `/forecast/{chamber}/2026/{pundit}` → `states`. Unused fields are stripped. */
+export const ForecastStateSchema = z.object({
+  rating: z.string(),
+  democrat_pct: z.number().min(0).max(100),
+  republican_pct: z.number().min(0).max(100),
+  independent_pct: z.number().min(0).max(100),
+});
+
+/** `/forecast/{chamber}/2026/{pundit}` envelope (fixtures recorded 2026-11-04 03:01–03:05Z). */
+export const ForecastSchema = z.object({
+  pundit: z.string(),
+  chamber: z.string(),
+  year: z.union([z.number(), z.string()]),
+  last_updated: z.string(),
+  has_percentages: z.boolean(),
+  states: z.record(z.string(), z.unknown()),
+});
+
 export type SearchCandidate = z.infer<typeof SearchCandidateSchema>;
 export type SearchRace = z.infer<typeof SearchRaceSchema>;
 export type SearchEnvelope = z.infer<typeof SearchEnvelopeSchema>;
 export type DetailCandidate = z.infer<typeof DetailCandidateSchema>;
 export type RaceDetail = z.infer<typeof RaceDetailSchema>;
+export type Forecast = z.infer<typeof ForecastSchema>;

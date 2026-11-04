@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { loadFixture } from "@/test/fixtures";
 import {
+  ForecastSchema,
+  ForecastStateSchema,
   RaceDetailSchema,
   SearchEnvelopeSchema,
   SearchRaceSchema,
@@ -62,5 +64,22 @@ describe("civicAPI race detail schema", () => {
     expect(d.candidates.length).toBeGreaterThan(2);
     expect(d.last_updated).toBe("2026-11-03T23:50:37.632Z");
     expect("region_results" in d).toBe(false);
+  });
+});
+
+describe("civicAPI forecast schema", () => {
+  it.each([
+    ["civicapi_forecast_senate_2026-11-04T0301Z.json", 35],
+    ["civicapi_forecast_house_2026-11-04T0303Z.json", 435],
+    ["civicapi_forecast_governor_2026-11-04T0305Z.json", 36],
+  ] as const)("parses %s with %i valid entries", (file, n) => {
+    const f = ForecastSchema.parse(loadFixture(file));
+    const entries = Object.values(f.states).map((v) => ForecastStateSchema.safeParse(v));
+    expect(entries.filter((e) => e.success)).toHaveLength(n);
+    expect(f.last_updated).toBe("2026-11-03");
+  });
+
+  it("rejects out-of-range probabilities", () => {
+    expect(ForecastStateSchema.safeParse({ rating: "x", democrat_pct: 120, republican_pct: 0, independent_pct: 0 }).success).toBe(false);
   });
 });

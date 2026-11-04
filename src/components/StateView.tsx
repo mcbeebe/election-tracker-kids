@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { Chamber } from "@/lib/providers/types";
+import type { Chamber, ForecastChamber } from "@/lib/providers/types";
 import { filterMeasures, measureRow } from "@/lib/view/measures";
 import { raceRows } from "@/lib/view/races";
 import { stateName } from "@/lib/view/states";
@@ -10,14 +10,17 @@ import { RaceTable } from "./races/RaceTable";
 import { SiteHeader } from "./SiteHeader";
 import { SourceBadge } from "./SourceBadge";
 import { StatusBanners } from "./StatusBanners";
+import { useForecasts } from "./useForecasts";
 import { isStale, usePolledResults } from "./usePolledResults";
 
 const CHAMBERS: readonly Chamber[] = ["senate", "governor", "house", "measures"];
+const FORECAST_CHAMBERS: readonly ForecastChamber[] = ["senate", "governor", "house"];
 const TITLES: Record<Chamber, string> = { senate: "Senate", governor: "Governor", house: "House", measures: "Ballot measures" };
 
 /** `/state/[code]`: one state's Senate, Governor, House and ballot-measure results. */
 export function StateView({ code }: { code: string }) {
   const { data, errors, loading, nextIn, now } = usePolledResults(CHAMBERS, undefined, `state=${code}`);
+  const forecasts = useForecasts(FORECAST_CHAMBERS);
   const loaded = CHAMBERS.map((c) => data[c]);
   const asOfs = loaded.flatMap((p) => (p ? [p.asOf] : [])).sort();
   const oldest = asOfs[0] ?? null;
@@ -62,7 +65,12 @@ export function StateView({ code }: { code: string }) {
               ) : c === "measures" ? (
                 <MeasuresTable rows={filterMeasures(p.races.map(measureRow))} caption={`${name} ballot measures`} />
               ) : (
-                <RaceTable caption={`${name} ${TITLES[c]} races`} rows={raceRows(p.races)} showSeat={c === "house"} />
+                <RaceTable
+                  caption={`${name} ${TITLES[c]} races`}
+                  rows={raceRows(p.races)}
+                  showSeat={c === "house"}
+                  forecast={forecasts[c]}
+                />
               )}
             </section>
           );

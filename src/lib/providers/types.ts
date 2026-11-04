@@ -88,6 +88,31 @@ export interface NormalizedRace {
   isTestData: boolean | null;
 }
 
+/** Chambers that have pre-election forecasts. */
+export type ForecastChamber = "senate" | "house" | "governor";
+
+/** One race's pre-election forecast: a rating and win probabilities (not vote shares). */
+export interface ForecastEntry {
+  /** e.g. `Safe R`, `Lean D`, `Tossup`. */
+  rating: string;
+  /** Win probability %, 0–100. */
+  d: number;
+  r: number;
+  i: number;
+}
+
+/** Pre-election forecast for a chamber, keyed by state (`GA`) or House seat (`CA-07`, `AK-AL`). */
+export interface NormalizedForecast {
+  source: ProviderId;
+  /** Model name as the source labels it, e.g. `civicAPI`. */
+  pundit: string;
+  chamber: ForecastChamber;
+  /** Date the source last updated the forecast (as given, e.g. `2026-11-03`). */
+  lastUpdated: string;
+  fetchedAt: string;
+  entries: Record<string, ForecastEntry>;
+}
+
 /** Rolling health of a provider, for the health route and stale banners. */
 export interface ProviderHealth {
   source: ProviderId;
@@ -108,4 +133,6 @@ export interface ResultsProvider {
   /** Fetch one race by its source id. */
   getRace(id: string): Promise<NormalizedRace>;
   health(): Promise<ProviderHealth>;
+  /** Pre-election forecast, when the source has one. */
+  getForecast?(chamber: ForecastChamber): Promise<NormalizedForecast>;
 }

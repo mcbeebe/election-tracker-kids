@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { loadFixture } from "@/test/fixtures";
-import { chamberFromType, CHAMBER_TYPES, normalizeRaceDetail, normalizeSearchRace } from "./normalize";
-import { RaceDetailSchema, type SearchRace, SearchEnvelopeSchema, SearchRaceSchema } from "./schema";
+import { chamberFromType, CHAMBER_TYPES, normalizeForecast, normalizeRaceDetail, normalizeSearchRace } from "./normalize";
+import { ForecastSchema, RaceDetailSchema, type SearchRace, SearchEnvelopeSchema, SearchRaceSchema } from "./schema";
 
 const AT = "2026-11-04T01:00:00.000Z";
 const HOUSE = "civicapi_search_house_2026-11-04T0049Z.json";
@@ -200,5 +200,26 @@ describe("normalizeRaceDetail", () => {
 
   it("rejects untracked detail types", () => {
     expect(normalizeRaceDetail("1", { ...detail, election_type: "Mayor" }, AT).ok).toBe(false);
+  });
+});
+
+describe("normalizeForecast", () => {
+  it("keys entries by upper-case state/seat and maps probabilities", () => {
+    const f = ForecastSchema.parse(loadFixture("civicapi_forecast_governor_2026-11-04T0305Z.json"));
+    const { forecast, skipped } = normalizeForecast("governor", f, AT);
+    expect(skipped).toEqual([]);
+    expect(Object.keys(forecast.entries)).toHaveLength(36);
+    expect(forecast.entries.AK).toEqual({ rating: "Lean D", d: 71.8, r: 28.2, i: 0 });
+    expect(forecast).toMatchObject({ source: "civicapi", pundit: "civicAPI", chamber: "governor", lastUpdated: "2026-11-03", fetchedAt: AT });
+  });
+
+  it("skips malformed entries and reports them", () => {
+    const { forecast, skipped } = normalizeForecast(
+      "senate",
+      { pundit: "p", chamber: "Senate", year: 2026, last_updated: "d", has_percentages: true, states: { ga: { rating: "Tossup", democrat_pct: 50, republican_pct: 50, independent_pct: 0 }, XX: { rating: 1 } } },
+      AT,
+    );
+    expect(Object.keys(forecast.entries)).toEqual(["GA"]);
+    expect(skipped).toEqual(["XX"]);
   });
 });

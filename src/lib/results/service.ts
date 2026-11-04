@@ -5,7 +5,18 @@ import { createSnapshotWriter } from "@/lib/db/snapshots";
 import { log } from "@/lib/log";
 import { getCivicApiProvider } from "@/lib/providers/civicapi";
 import { FixtureProvider } from "@/lib/providers/fixtures";
-import type { Chamber, NormalizedRace, ProviderHealth, ProviderId, ResultsProvider } from "@/lib/providers/types";
+import type {
+  Chamber,
+  ForecastChamber,
+  NormalizedForecast,
+  NormalizedRace,
+  ProviderHealth,
+  ProviderId,
+  ResultsProvider,
+} from "@/lib/providers/types";
+
+/** Forecasts change daily; cache them for 10 minutes (TASKS-PHASE0 §4). */
+export const FORECAST_TTL_MS = 10 * 60_000;
 
 /** Body of `GET /api/results`. */
 export interface ResultsPayload {
@@ -52,6 +63,8 @@ export interface ResultsServiceOptions {
   healthTtlMs?: number;
   now?: () => number;
   onRefresh?: RefreshHook;
+  /** Forecast cache TTL. Default {@link FORECAST_TTL_MS}. */
+  forecastTtlMs?: number;
   /** Upper bound for one snapshot write; it is abandoned (and logged) after this. Default 20 s. */
   snapshotTimeoutMs?: number;
 }
@@ -70,6 +83,7 @@ export class ResultsService {
   private readonly provider: ResultsProvider;
   private readonly cache: SwrCache<NormalizedRace[]>;
   private readonly healthCache: SwrCache<ProviderHealth>;
+  private readonly forecastCache: SwrCache<NormalizedForecast>;
   private readonly now: () => number;
   private readonly onRefresh: RefreshHook | undefined;
   private readonly snapshotTimeoutMs: number;
@@ -85,6 +99,8 @@ export class ResultsService {
     const onEvent = (e: SwrEvent) => logCacheEvent("results", e);
     this.cache = new SwrCache({ ttlMs: opts.ttlMs, now: this.now, onEvent });
     this.healthCache = new SwrCache({ ttlMs: opts.healthTtlMs ?? 30_000, now: this.now });
+    // The source updates forecasts daily; 10 minutes keeps upstream cost negligible.
+    this.forecastCache = new SwrCache({ ttlMs: opts.forecastTtlMs ?? FORECAST_TTL_MS, now: this.now });
   }
 
   /**
@@ -120,6 +136,19 @@ export class ResultsService {
       },
       refresh: this.background(r.refresh),
     };
+  }
+
+  /**
+   * Pre-election forecast for a chamber, cached for {@link FORECAST_TTL_MS}.
+   *
+   * @param chamber - `senate`, `house` or `governor`.
+   * @throws If the provider has no forecasts, or nothing is cached and the upstream load fails.
+   */
+  async getForecast(chamber: ForecastChamber): Promise<{ forecast: NormalizedForecast; stale: boolean; refresh: Promise<void> | null }> {
+    const provider = this.provider;
+    if (!provider.getForecast) throw new Error(`provider ${provider.id} has no forecasts`);
+    const r = await this.forecastCache.get(chamber, () => provider.getForecast!(chamber));
+    return { forecast: r.value, stale: r.stale, refresh: r.refresh };
   }
 
   /** Provider health (cached briefly so health checks don't spend upstream requests) plus cache state. */

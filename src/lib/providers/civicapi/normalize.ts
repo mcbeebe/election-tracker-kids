@@ -1,7 +1,14 @@
 import { parseDistrict } from "@/lib/normalize/district";
 import { partyColor, partyKey } from "@/lib/normalize/party";
-import type { Chamber, NormalizedCandidate, NormalizedRace } from "@/lib/providers/types";
-import type { DetailCandidate, RaceDetail, SearchCandidate, SearchRace } from "./schema";
+import type {
+  Chamber,
+  ForecastChamber,
+  ForecastEntry,
+  NormalizedCandidate,
+  NormalizedForecast,
+  NormalizedRace,
+} from "@/lib/providers/types";
+import { type DetailCandidate, type Forecast, ForecastStateSchema, type RaceDetail, type SearchCandidate, type SearchRace } from "./schema";
 
 /**
  * civicAPI search `type` strings per chamber. Exact strings matter: `Senate` and
@@ -163,4 +170,34 @@ export function normalizeRaceDetail(id: string, d: RaceDetail, fetchedAt: string
       isTestData: d.test_data ?? null,
     },
   );
+}
+
+/**
+ * Normalize a forecast envelope. Entries that fail validation are dropped and counted, so one
+ * malformed state cannot hide the rest.
+ *
+ * @param chamber - Requested chamber.
+ * @param f - Zod-parsed forecast envelope.
+ * @param fetchedAt - ISO time of the pull.
+ */
+export function normalizeForecast(
+  chamber: ForecastChamber,
+  f: Forecast,
+  fetchedAt: string,
+): { forecast: NormalizedForecast; skipped: string[] } {
+  const entries: Record<string, ForecastEntry> = {};
+  const skipped: string[] = [];
+  for (const [key, raw] of Object.entries(f.states)) {
+    const parsed = ForecastStateSchema.safeParse(raw);
+    if (!parsed.success) {
+      skipped.push(key);
+      continue;
+    }
+    const v = parsed.data;
+    entries[key.toUpperCase()] = { rating: v.rating, d: v.democrat_pct, r: v.republican_pct, i: v.independent_pct };
+  }
+  return {
+    forecast: { source: "civicapi", pundit: f.pundit, chamber, lastUpdated: f.last_updated, fetchedAt, entries },
+    skipped,
+  };
 }

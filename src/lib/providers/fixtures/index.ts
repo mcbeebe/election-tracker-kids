@@ -1,8 +1,16 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { normalizeSearchRace } from "@/lib/providers/civicapi/normalize";
-import { SearchEnvelopeSchema, SearchRaceSchema } from "@/lib/providers/civicapi/schema";
-import type { Chamber, NormalizedRace, ProviderHealth, RaceScope, ResultsProvider } from "@/lib/providers/types";
+import { normalizeForecast, normalizeSearchRace } from "@/lib/providers/civicapi/normalize";
+import { ForecastSchema, SearchEnvelopeSchema, SearchRaceSchema } from "@/lib/providers/civicapi/schema";
+import type {
+  Chamber,
+  ForecastChamber,
+  NormalizedForecast,
+  NormalizedRace,
+  ProviderHealth,
+  RaceScope,
+  ResultsProvider,
+} from "@/lib/providers/types";
 
 /** A recorded fixture and when it was recorded (minute precision, from DATA-SOURCES.md § Fixtures). */
 export interface FixtureFile {
@@ -21,6 +29,13 @@ export const FIXTURE_FILES: Readonly<Record<Chamber, readonly FixtureFile[]>> = 
     { file: "civicapi_search_referendum_offset500_2026-11-04T0101Z.json", recordedAt: "2026-11-04T01:01:00.000Z" },
     { file: "civicapi_search_proposition_2026-11-04T0100Z.json", recordedAt: "2026-11-04T01:00:00.000Z" },
   ],
+};
+
+/** Recorded civicAPI forecasts replayed by {@link FixtureProvider.getForecast}. */
+export const FORECAST_FILES: Readonly<Record<ForecastChamber, FixtureFile>> = {
+  senate: { file: "civicapi_forecast_senate_2026-11-04T0301Z.json", recordedAt: "2026-11-04T03:01:00.000Z" },
+  house: { file: "civicapi_forecast_house_2026-11-04T0303Z.json", recordedAt: "2026-11-04T03:03:00.000Z" },
+  governor: { file: "civicapi_forecast_governor_2026-11-04T0305Z.json", recordedAt: "2026-11-04T03:05:00.000Z" },
 };
 
 /**
@@ -66,6 +81,13 @@ export class FixtureProvider implements ResultsProvider {
       if (hit) return hit;
     }
     throw new Error(`fixture race ${id} not found`);
+  }
+
+  /** Replay a recorded forecast, labeled as fixtures. */
+  async getForecast(chamber: ForecastChamber): Promise<NormalizedForecast> {
+    const { file, recordedAt } = FORECAST_FILES[chamber];
+    const env = ForecastSchema.parse(JSON.parse(readFileSync(join(this.dir, file), "utf8")));
+    return { ...normalizeForecast(chamber, env, recordedAt).forecast, source: this.id };
   }
 
   /** Always healthy. */

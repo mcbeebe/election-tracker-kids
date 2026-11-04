@@ -1,10 +1,13 @@
 import { raceStatus } from "@/lib/normalize/status";
 import type { NormalizedRace, PartyKey } from "@/lib/providers/types";
+import { forecastKey } from "./forecast";
 import { formatMargin } from "./format";
 
 /** One row of a per-state race table. */
 export interface RaceRow {
   id: string;
+  /** Key into a forecast's entries (see {@link forecastKey}). */
+  forecastKey: string;
   name: string;
   /** Sort key and short label: `CA-07`, `AK-AL`, or `Statewide`. */
   seat: string;
@@ -41,6 +44,7 @@ export function raceRow(race: NormalizedRace): RaceRow {
           : "No results yet";
   return {
     id: race.id,
+    forecastKey: forecastKey(race),
     name: race.name,
     seat,
     percentReporting: race.percentReporting,

@@ -43,6 +43,12 @@ describe("FixtureProvider", () => {
     await expect(p.getRace("0")).rejects.toThrow("not found");
   });
 
+  it("replays recorded forecasts, labeled as fixtures with their recording time", async () => {
+    const f = await p.getForecast("house");
+    expect(Object.keys(f.entries)).toHaveLength(435);
+    expect(f).toMatchObject({ source: "fixtures", fetchedAt: "2026-11-04T03:03:00.000Z", lastUpdated: "2026-11-03" });
+  });
+
   it("is always healthy", async () => {
     expect(await p.health()).toMatchObject({ source: "fixtures", ok: true });
   });

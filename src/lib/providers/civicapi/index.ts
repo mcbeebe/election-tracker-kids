@@ -1,9 +1,16 @@
 import { ELECTION_DATE, loadServerConfig } from "@/lib/config";
 import { log } from "@/lib/log";
-import type { NormalizedRace, ProviderHealth, RaceScope, ResultsProvider } from "@/lib/providers/types";
+import type {
+  ForecastChamber,
+  NormalizedForecast,
+  NormalizedRace,
+  ProviderHealth,
+  RaceScope,
+  ResultsProvider,
+} from "@/lib/providers/types";
 import { CivicApiClient, CivicApiError } from "./client";
-import { CHAMBER_TYPES, normalizeRaceDetail, normalizeSearchRace } from "./normalize";
-import { RaceDetailSchema, SearchEnvelopeSchema, SearchRaceSchema } from "./schema";
+import { CHAMBER_TYPES, normalizeForecast, normalizeRaceDetail, normalizeSearchRace } from "./normalize";
+import { ForecastSchema, RaceDetailSchema, SearchEnvelopeSchema, SearchRaceSchema } from "./schema";
 
 /** Page size for `/race/search` (max observed to work: 500). */
 export const SEARCH_PAGE_LIMIT = 500;
@@ -67,6 +74,20 @@ export class CivicApiProvider implements ResultsProvider {
     const result = normalizeRaceDetail(id, detail, fetchedAt);
     if (!result.ok) throw new Error(`civicAPI race ${id}: ${result.reason}`);
     return result.race;
+  }
+
+  /**
+   * civicAPI's own pre-election forecast (`/forecast/{chamber}/2026/civicapi`). Updated daily by
+   * the source; callers should cache it for minutes, not seconds.
+   *
+   * @param chamber - `senate`, `house` or `governor`.
+   */
+  async getForecast(chamber: ForecastChamber): Promise<NormalizedForecast> {
+    const fetchedAt = this.now().toISOString();
+    const env = ForecastSchema.parse(await this.client.getJson(`/forecast/${chamber}/2026/civicapi`));
+    const { forecast, skipped } = normalizeForecast(chamber, env, fetchedAt);
+    if (skipped.length) log("warn", "civicapi.forecast_entries_skipped", { chamber, skipped: skipped.slice(0, 10), count: skipped.length });
+    return forecast;
   }
 
   /**

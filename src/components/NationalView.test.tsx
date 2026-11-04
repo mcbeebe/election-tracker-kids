@@ -3,6 +3,9 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ResultsPayload } from "@/lib/results/service";
 import { GOVERNOR_PRE, HOUSE_LIVE, SENATE_LIVE, splitFixture } from "@/test/live-fixtures";
+import { normalizeForecast } from "@/lib/providers/civicapi/normalize";
+import { ForecastSchema } from "@/lib/providers/civicapi/schema";
+import { loadFixture } from "@/test/fixtures";
 import { NationalView } from "./NationalView";
 
 const FILES = { senate: SENATE_LIVE, house: HOUSE_LIVE, governor: GOVERNOR_PRE } as const;
@@ -112,6 +115,41 @@ describe("NationalView", () => {
     expect(
       await screen.findByText(/national Senate tally says Democrats 39\s*, but its race-by-race calls add up to 36\. We show the race-by-race total/),
     ).toBeInTheDocument();
+  });
+
+  it("shows civicAPI's pre-election forecast as a neutral 'Before voting' chip on close races", async () => {
+    const forecast = normalizeForecast(
+      "senate",
+      ForecastSchema.parse(loadFixture("civicapi_forecast_senate_2026-11-04T0301Z.json")),
+      "2026-11-04T03:01:00.000Z",
+    ).forecast;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const u = new URL(url, "http://x");
+        const c = u.searchParams.get("chamber") as keyof typeof FILES;
+        if (u.pathname === "/api/forecast") return c === "senate" ? Response.json(forecast) : Response.json({}, { status: 503 });
+        return Response.json(payload(c, "2026-11-04T01:00:00.000Z"));
+      }),
+    );
+    render(<NationalView />);
+    await screen.findByRole("list", { name: "Senate races by state" });
+    expect((await screen.findAllByText("Before voting:")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/forecast \(updated 2026-11-03\) rated this .*Not a result\./).length).toBeGreaterThan(0);
+  });
+
+  it("ignores an unexpected forecast body instead of breaking the page", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const u = new URL(url, "http://x");
+        if (u.pathname === "/api/forecast") return Response.json({ surprise: true });
+        return Response.json(payload(u.searchParams.get("chamber") as keyof typeof FILES, "2026-11-04T01:00:00.000Z"));
+      }),
+    );
+    render(<NationalView />);
+    expect(await screen.findByRole("img", { name: /Senate: Democrats 36/ })).toBeInTheDocument();
+    expect(screen.queryByText("Before voting:")).toBeNull();
   });
 
   it("shows a stale banner when data is older than 3 minutes", async () => {

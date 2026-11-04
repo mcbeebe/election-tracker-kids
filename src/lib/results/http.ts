@@ -72,3 +72,39 @@ export async function handleHealth(service: ResultsService): Promise<HttpResult>
   const body = await service.health();
   return { status: 200, body, headers: { "Cache-Control": NO_STORE }, background: null };
 }
+
+const ForecastQuerySchema = z.object({ chamber: z.enum(["senate", "house", "governor"]) });
+
+/** Forecasts change daily; let shared caches hold them for a few minutes. */
+export const FORECAST_CACHE_CONTROL = "public, max-age=0, s-maxage=300, stale-while-revalidate=600";
+
+/**
+ * Handle `GET /api/forecast?chamber=senate|house|governor`.
+ *
+ * @param params - Request query string.
+ * @param service - Results service.
+ */
+export async function handleForecast(params: URLSearchParams, service: ResultsService): Promise<HttpResult> {
+  const parsed = ForecastQuerySchema.safeParse({ chamber: params.get("chamber") ?? undefined });
+  if (!parsed.success) {
+    return {
+      status: 400,
+      body: { error: "bad_request", issues: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`) },
+      headers: { "Cache-Control": NO_STORE },
+      background: null,
+    };
+  }
+  try {
+    const { forecast, stale, refresh } = await service.getForecast(parsed.data.chamber);
+    return { status: 200, body: { ...forecast, stale }, headers: { "Cache-Control": FORECAST_CACHE_CONTROL }, background: refresh };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    log("error", "api.forecast.unavailable", { chamber: parsed.data.chamber, message });
+    return {
+      status: 503,
+      body: { error: "upstream_unavailable", chamber: parsed.data.chamber, message },
+      headers: { "Cache-Control": NO_STORE, "Retry-After": "60" },
+      background: null,
+    };
+  }
+}

@@ -2,6 +2,7 @@ import { catchUp } from "@/lib/normalize/catch-up";
 import { PARTY_COLORS } from "@/lib/normalize/party";
 import { raceStatus } from "@/lib/normalize/status";
 import type { NormalizedRace, PartyKey } from "@/lib/providers/types";
+import { forecastKey } from "./forecast";
 import { formatMargin, formatReporting } from "./format";
 
 /** Tile-grid coordinates `[code, row, col]`, from `docs/mockups/OptionB.dc.html`. */
@@ -154,6 +155,8 @@ export function tileColors(t: Pick<TileModel, "state" | "party">): { background:
 /** One row of the closest-races list. */
 export interface CloseRace {
   id: string;
+  /** Key into a forecast's entries (see {@link forecastKey}). */
+  forecastKey: string;
   name: string;
   state: string;
   percentReporting: number;
@@ -182,6 +185,7 @@ export function closestRaces(races: readonly NormalizedRace[], limit = 5): Close
       const cu = catchUp(r);
       return {
         id: r.id,
+        forecastKey: forecastKey(r),
         name: r.name,
         state: r.state,
         percentReporting: r.percentReporting,

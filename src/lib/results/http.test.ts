@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fakeProvider, race } from "@/test/fake-provider";
-import { handleHealth, handleResults, SUCCESS_CACHE_CONTROL } from "./http";
+import { FORECAST_CACHE_CONTROL, handleForecast, handleHealth, handleResults, SUCCESS_CACHE_CONTROL } from "./http";
 import { ResultsService } from "./service";
 
 const q = (s: string) => new URLSearchParams(s);
@@ -81,5 +81,30 @@ describe("handleHealth", () => {
     expect(r.status).toBe(200);
     expect(r.headers["Cache-Control"]).toBe("no-store");
     expect(r.body).toMatchObject({ provider: { ok: true }, cache: [] });
+  });
+});
+
+describe("handleForecast", () => {
+  const forecast = { source: "civicapi", pundit: "civicAPI", chamber: "house", lastUpdated: "2026-11-03", fetchedAt: "t", entries: {} };
+
+  it("200 with the forecast, its stale flag and a minutes-long shared cache", async () => {
+    const refresh = Promise.resolve();
+    const s = { getForecast: async () => ({ forecast, stale: true, refresh }) } as unknown as ResultsService;
+    const r = await handleForecast(q("chamber=house"), s);
+    expect(r).toMatchObject({ status: 200, body: { ...forecast, stale: true }, headers: { "Cache-Control": FORECAST_CACHE_CONTROL } });
+    expect(r.background).toBe(refresh);
+  });
+
+  it.each(["", "chamber=measures", "chamber=Senate"])("400 on %j", async (query) => {
+    const r = await handleForecast(q(query), service());
+    expect(r.status).toBe(400);
+  });
+
+  it("503 when the forecast is unavailable", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const r = await handleForecast(q("chamber=senate"), service());
+    expect(r).toMatchObject({ status: 503, body: { error: "upstream_unavailable", message: "provider civicapi has no forecasts" } });
+    const s = { getForecast: () => Promise.reject("boom") } as unknown as ResultsService;
+    expect((await handleForecast(q("chamber=senate"), s)).body).toMatchObject({ message: "boom" });
   });
 });

@@ -10,6 +10,7 @@ import { ClosestRaces } from "./races/ClosestRaces";
 import { SiteHeader } from "./SiteHeader";
 import { SourceBadge } from "./SourceBadge";
 import { StatusBanners } from "./StatusBanners";
+import { useForecasts } from "./useForecasts";
 import { isStale, usePolledResults } from "./usePolledResults";
 
 type MapChamber = Exclude<Chamber, "measures">;
@@ -19,6 +20,7 @@ const TAB_LABEL: Record<MapChamber, string> = { senate: "Senate", house: "House"
 /** National results view (Option B layout). Client-side so it can poll. */
 export function NationalView() {
   const { data, errors, loading, nextIn, now } = usePolledResults(CHAMBERS);
+  const forecasts = useForecasts(CHAMBERS);
   const [tab, setTab] = useState<MapChamber>("senate");
   const [showLeading, setShowLeading] = useState(false);
 
@@ -156,10 +158,11 @@ export function NationalView() {
             </div>
             <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-2.5">
               <h3 className="m-0 text-[13px] font-bold tracking-widest text-[#5B6274] uppercase">Closest uncalled races</h3>
-              <ClosestRaces rows={close} />
+              <ClosestRaces rows={close} forecast={forecasts[tab]} />
               <p className="m-0 text-xs text-[#5B6274]">
                 Too early / Open / Likely / Locked is vote arithmetic, not a projection. * = % reporting is
-                precinct-based or very low here, so the estimate is shaky.
+                precinct-based or very low here, so the estimate is shaky. &ldquo;Before voting&rdquo; is civicAPI&apos;s
+                pre-election forecast (win chance), not a result.
               </p>
             </div>
           </div>

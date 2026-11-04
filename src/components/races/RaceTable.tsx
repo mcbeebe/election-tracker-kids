@@ -1,6 +1,8 @@
 import { PARTY_COLORS } from "@/lib/normalize/party";
 import { formatReporting } from "@/lib/view/format";
+import type { NormalizedForecast } from "@/lib/providers/types";
 import type { RaceRow } from "@/lib/view/races";
+import { ForecastBadge } from "./ForecastBadge";
 
 /** Props for {@link RaceTable}. */
 export interface RaceTableProps {
@@ -8,6 +10,8 @@ export interface RaceTableProps {
   rows: RaceRow[];
   /** Show the seat column (House). */
   showSeat?: boolean;
+  /** Pre-election forecast for the chamber, for the "Before voting" chip. */
+  forecast?: NormalizedForecast;
 }
 
 const STATUS_STYLE: Record<RaceRow["status"], string> = {
@@ -18,7 +22,7 @@ const STATUS_STYLE: Record<RaceRow["status"], string> = {
 };
 
 /** Race table: top candidates with share, margin, % reporting and who called it. */
-export function RaceTable({ caption, rows, showSeat = false }: RaceTableProps) {
+export function RaceTable({ caption, rows, showSeat = false, forecast }: RaceTableProps) {
   return (
     <div className="overflow-x-auto rounded-xl border border-[#E2E0D8] bg-white">
       <table className="w-full border-collapse text-sm">
@@ -51,6 +55,9 @@ export function RaceTable({ caption, rows, showSeat = false }: RaceTableProps) {
                     </li>
                   ))}
                 </ul>
+                <div className="mt-1.5">
+                  <ForecastBadge forecast={forecast} forecastKey={r.forecastKey} />
+                </div>
                 <div data-testid="mobile-meta" className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-[#5B6274] sm:hidden">
                   <span>
                     {r.margin} · {formatReporting(r.percentReporting)}
