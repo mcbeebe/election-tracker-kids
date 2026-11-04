@@ -4,6 +4,8 @@ import { getResultsService } from "@/lib/results/service";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+// Cold loads wait on civicAPI, which took ~49 s per request under election-night load.
+export const maxDuration = 300;
 
 /** `GET /api/forecast?chamber=senate|house|governor` — civicAPI's pre-election forecast. */
 export async function GET(request: Request): Promise<Response> {
