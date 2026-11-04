@@ -20,6 +20,8 @@ export function TileMap({ tiles, label }: TileMapProps) {
     >
       {tiles.map((t) => {
         const c = tileColors(t);
+        // Text on hatching is hard to read; give it a light backing so the stripes stay visible around it.
+        const chip = t.state === "leading" ? "rounded-sm bg-white/85 leading-tight" : "";
         return (
           <li
             key={t.code}
@@ -34,10 +36,10 @@ export function TileMap({ tiles, label }: TileMapProps) {
               className="flex h-full w-full flex-col items-center justify-center no-underline"
               style={{ color: c.color }}
             >
-              <span className="text-[11px] font-bold sm:text-[13px]">{t.code}</span>
-              <span className="hidden max-w-full px-0.5 font-mono text-[9px] whitespace-nowrap sm:block sm:text-[10px]">{t.sub}</span>
+              <span className={`text-[11px] font-bold sm:text-[13px] ${chip}`}>{t.code}</span>
+              <span className={`hidden max-w-full px-0.5 font-mono text-[9px] whitespace-nowrap sm:block sm:text-[10px] ${chip}`}>{t.sub}</span>
               {t.sub2 && (
-                <span className="hidden max-w-full px-0.5 font-mono text-[9px] whitespace-nowrap sm:block sm:text-[10px]">{t.sub2}</span>
+                <span className={`hidden max-w-full px-0.5 font-mono text-[9px] whitespace-nowrap sm:block sm:text-[10px] ${chip}`}>{t.sub2}</span>
               )}
             </Link>
           </li>
