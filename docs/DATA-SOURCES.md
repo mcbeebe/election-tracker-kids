@@ -26,9 +26,9 @@ dead `/api/v1/`; this contract was recovered from the site's JS bundle and can c
 
 | Scope | `type` | Count | Notes |
 |---|---|---|---|
-| Senate | `US Senate` | 36 | includes specials (OH, FL) |
-| House | `House of Representatives` | 436 | `district` = `CA-01` style; one extra vs 435 — identify (special or national aggregate 87524) |
-| Governor | `Governor` | 39 | add `election_type=Statewide` to drop territories if wanted |
+| Senate | `US Senate` | 36 | **35 seats** (33 regular + OH, FL specials) **+ 1 national aggregate** (id 87528, `province: "US"`) |
+| House | `House of Representatives` | 436 | **435 seats + national aggregate 87524** (`province: "US"`, `district: null`). `district` = `CA-01`; at-large = `XX-AL` (AK, DE, ND, SD, VT, WY). CA = 52 |
+| Governor | `Governor` | 39 | 36 states + VI, GU, MP. AZ row has `district: "AZ"` (treat as statewide) |
 | Measures | `Referendum` | 500+ (limit) | page with `offset`; also `Proposition` (99) |
 | Per-state | `province=CA` | 500+ | mixed types; filter client-side by `type` |
 
@@ -52,11 +52,32 @@ map, factor_weights, sources{expert_ratings[], betting_markets[kalshi,polymarket
 monte_carlo{simulations, expected_*_seats, p5/p50/p95, majority_threshold}, distribution{bins[]}`.
 `kalshi` pundit returns the same shape (market-implied). `polymarket` returned 502 at probe time.
 
+### National aggregate rows (verified 2026-11-04 00:54Z)
+
+Each chamber search includes one `province: "US"` roll-up row. Its candidates are parties, and
+`seats` = seats held after the source's calls: Senate started at 34 D + 31 R (the 65 seats not up)
+and read 36 D + 31 R once GA and VA were called D. Never count an aggregate as a seat; it is a
+useful cross-check for balance-of-power totals. civicAPI called GA at 32% and VA at 19% reporting —
+its calls come early, so always label them "called by civicAPI".
+
 ### Observed failure modes
 
 - Empty body (HTTP 000/200 with no JSON) after ~6 rapid calls → treat as retryable.
 - HTTP 502 intermittently.
 - `type=Ballot Measure` failed at TCP level once; not a valid type anyway.
+- 2026-11-04 00:46–00:56Z (polls closing): `/status` stayed 200 while `/race/search` returned
+  Cloudflare 502 (`error code: 502`, 16 bytes), 503, and 40 s zero-byte timeouts. Searches succeeded
+  after 30–120 s backoff. `/status` is therefore **not** a reliable health signal for search.
+
+### Fixtures
+
+| File | Recorded | Notes |
+|---|---|---|
+| `civicapi_search_us_senate.json` | 2026-11-03 ~15:40 PT | pre-results (0% reporting) |
+| `civicapi_search_governor.json` | 2026-11-03 ~15:40 PT | pre-results |
+| `civicapi_race_87524_house_national.json` | 2026-11-03 15:50 PT | national House detail; has `region_results` |
+| `civicapi_search_house_2026-11-04T0049Z.json` | 2026-11-04 00:49Z | 87 races with votes, 15 called |
+| `civicapi_search_us_senate_2026-11-04T0054Z.json` | 2026-11-04 00:54Z | GA, VA called |
 
 ## State SoS / county sites (Phase 1)
 

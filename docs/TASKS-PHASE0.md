@@ -15,12 +15,19 @@ Tick boxes as you go; commit after each ticked item.
 - [x] Commit: `chore: scaffold`
 
 ## 1. Provider layer (60 min)
-- [ ] `src/lib/providers/types.ts` — `ResultsProvider`, `NormalizedRace`, `NormalizedCandidate`, `RaceScope`, `ProviderHealth` (+ JSDoc)
-- [ ] `src/lib/providers/civicapi/schema.ts` — Zod schemas for search result + race detail (derive from `docs/fixtures/*.json`)
-- [ ] `src/lib/providers/civicapi/client.ts` — fetch with 8s timeout, ≤1 req/s token bucket + jitter, backoff 1s→2s→4s→8s on 5xx/empty body, `User-Agent: election-tracker-kids/0.1 (personal)`
-- [ ] `src/lib/providers/civicapi/index.ts` — `listRaces({chamber})` using exact type strings (see CLAUDE.md gotchas); paginate `Referendum` with `offset`
-- [ ] `src/lib/normalize/*` — party→color, `CA-01` → `{state, district}`, `status(race)` → `called | leading | counting | not_started`, `catchUp(race)` → `too_early | open | likely | locked` (margin vs. estimated outstanding = total/pct_reporting − total; mark `unreliable` when pct_reporting < 5 or state ∈ {CA, AZ, NV, WA, OR, UT, CO})
-- [ ] Tests: schema parses all fixtures; normalizers; backoff sequence; token bucket. **Acceptance:** `pnpm test` green, ≥90% coverage on `lib/`.
+- [x] `src/lib/providers/types.ts` — `ResultsProvider`, `NormalizedRace`, `NormalizedCandidate`, `RaceScope`, `ProviderHealth` (+ JSDoc)
+  - Adds `kind: "seat" | "national_aggregate"`: each civicAPI chamber search includes a `province: "US"` roll-up row that must never count as a seat.
+- [x] `src/lib/providers/civicapi/schema.ts` — Zod schemas for search result + race detail (derive from `docs/fixtures/*.json`)
+  - Two new fixtures recorded tonight (House search, live Senate search); see DATA-SOURCES.md § Fixtures.
+- [x] `src/lib/providers/civicapi/client.ts` — fetch with 8s timeout, ≤1 req/s token bucket + jitter, backoff 1s→2s→4s→8s on 5xx/empty body, `User-Agent: election-tracker-kids/0.1 (personal)`
+  - Also retries 429, invalid/truncated JSON, timeouts and network errors; other 4xx fail fast. `CIVICAPI_MIN_INTERVAL_MS` < 1000 is rejected by config. Bucket is per process (one per serverless instance).
+- [x] `src/lib/providers/civicapi/index.ts` — `listRaces({chamber})` using exact type strings (see CLAUDE.md gotchas); paginate `Referendum` with `offset`
+  - Pagination stops on a short page, a repeated page (offset ignored → warn), or 10 pages. **Not yet verified live:** `Referendum`/`Proposition` payloads (civicAPI 502s at record time) — recorder still retrying; verify measure shape before §5.
+- [x] `src/lib/normalize/*` — party→color, `CA-01` → `{state, district}`, `status(race)` → `called | leading | counting | not_started`, `catchUp(race)` → `too_early | open | likely | locked` (margin vs. estimated outstanding = total/pct_reporting − total; mark `unreliable` when pct_reporting < 5 or state ∈ {CA, AZ, NV, WA, OR, UT, CO})
+  - **Assumption to confirm (Mike):** `likely` = trailer needs ≥ 60% of the remaining two-way vote (`LIKELY_REQUIRED_SHARE`). `locked` = margin > outstanding (FORECAST-MODEL.md §3.6). `too_early` = no votes or 0% reporting. Catch-up is pure arithmetic and ignores calls.
+  - Overrides: `called` (must name a real candidate, else reported as ignored) beats source; `uncalled`/`disputed` suppress source winners.
+- [x] Tests: schema parses all fixtures; normalizers; backoff sequence; token bucket. **Acceptance:** `pnpm test` green, ≥90% coverage on `lib/`.
+  - 174 tests; coverage on `src/lib`: 100% statements/lines/functions, 98.5% branches.
 
 ## 2. Cache + API routes (30 min)
 - [ ] `src/lib/cache/swr.ts` — in-memory per-chamber cache, 45s TTL, serve stale on error, `asOf` timestamp
