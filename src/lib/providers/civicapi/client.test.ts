@@ -85,6 +85,13 @@ describe("CivicApiClient", () => {
     await expect(c.getJson("/x")).resolves.toEqual({});
   });
 
+  it("makes a single attempt when retry is disabled", async () => {
+    const { c, calls, clock } = client([{ status: 502 }, { body: "{}" }]);
+    await expect(c.getJson("/status", {}, { retry: false })).rejects.toMatchObject({ status: 502 });
+    expect(calls).toHaveLength(1);
+    expect(clock.sleeps).toEqual([]);
+  });
+
   it("does not retry other 4xx", async () => {
     const { c, calls } = client([{ status: 404, body: "nope" }]);
     await expect(c.getJson("/x")).rejects.toMatchObject({ kind: "http", status: 404 });

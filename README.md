@@ -9,7 +9,9 @@ Senate, House, Governors, and ballot measures. Personal project.
 
 ## Status
 
-Phase 0 in progress — §0 scaffold done (Next.js 15, TypeScript strict, Tailwind, Vitest, CI). See [`docs/TASKS-PHASE0.md`](docs/TASKS-PHASE0.md).
+Phase 0 in progress — §0–§5 built; §3 (Supabase) and §6 (deploy) wait on decisions; live acceptance pending civicAPI recovery. See [`docs/TASKS-PHASE0.md`](docs/TASKS-PHASE0.md).
+
+Dev without hitting civicAPI: `RESULTS_PROVIDER=fixtures pnpm dev` replays recorded responses (refused in production).
 
 ## Data provenance
 

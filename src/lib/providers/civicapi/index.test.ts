@@ -165,8 +165,10 @@ describe("CivicApiProvider.getRace", () => {
 });
 
 describe("CivicApiProvider.health", () => {
-  it("is ok when /status answers ok", async () => {
+  it("is ok when /status answers ok, pinging once without retries", async () => {
     const { provider, t } = transport(() => ({ status: "ok" }));
+    await provider.health();
+    expect(t.getJson).toHaveBeenCalledWith("/status", {}, { retry: false });
     vi.mocked(t.stats).mockReturnValue({ lastOkAt: NOW.getTime(), lastLatencyMs: 120, lastError: null, errorRate: 0.1, attempts: 10 });
     expect(await provider.health()).toEqual({
       source: "civicapi",

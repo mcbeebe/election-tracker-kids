@@ -12,7 +12,9 @@ describe("TileMap", () => {
     const items = within(list).getAllByRole("listitem");
     expect(items).toHaveLength(50);
     const ga = items.find((li) => li.getAttribute("data-state") === "called" && li.textContent?.startsWith("GA"))!;
-    expect(ga).toHaveAccessibleName(/Georgia US Senate: called for .* by civicAPI/);
     expect(ga).toHaveStyle({ backgroundColor: "rgb(58, 111, 183)" });
+    const link = within(ga).getByRole("link");
+    expect(link).toHaveAccessibleName(/Georgia US Senate: called for .* by civicAPI/);
+    expect(link).toHaveAttribute("href", "/state/GA");
   });
 });

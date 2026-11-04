@@ -63,12 +63,12 @@ export class CivicApiProvider implements ResultsProvider {
     return result.race;
   }
 
-  /** Ping `/status` (rate-limited like any call) and combine with rolling stats. */
+  /** Ping `/status` once (rate-limited, no retries) and combine with rolling stats. */
   async health(): Promise<ProviderHealth> {
     let ok = false;
     let pingError: string | null = null;
     try {
-      const body = await this.client.getJson("/status");
+      const body = await this.client.getJson("/status", {}, { retry: false });
       ok = (body as { status?: unknown } | null)?.status === "ok";
       if (!ok) pingError = "unexpected /status body";
     } catch (e) {

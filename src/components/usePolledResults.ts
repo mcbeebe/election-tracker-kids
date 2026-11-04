@@ -21,8 +21,8 @@ export interface PolledResults {
   now: number;
 }
 
-async function fetchChamber(chamber: Chamber, signal: AbortSignal): Promise<ResultsPayload> {
-  const res = await fetch(`/api/results?chamber=${chamber}`, { cache: "no-store", signal });
+async function fetchChamber(chamber: Chamber, query: string, signal: AbortSignal): Promise<ResultsPayload> {
+  const res = await fetch(`/api/results?chamber=${chamber}${query ? `&${query}` : ""}`, { cache: "no-store", signal });
   const body = (await res.json()) as ResultsPayload | { message?: string };
   if (!res.ok) throw new Error((body as { message?: string }).message ?? `HTTP ${res.status}`);
   return body as ResultsPayload;
@@ -34,20 +34,23 @@ async function fetchChamber(chamber: Chamber, signal: AbortSignal): Promise<Resu
  *
  * @param chambers - Chambers to poll (stable array).
  * @param intervalMs - Poll interval.
+ * @param query - Extra query string applied to every chamber, e.g. `state=CA`.
  */
-export function usePolledResults(chambers: readonly Chamber[], intervalMs = POLL_MS): PolledResults {
+export function usePolledResults(chambers: readonly Chamber[], intervalMs = POLL_MS, query = ""): PolledResults {
   const [data, setData] = useState<PolledResults["data"]>({});
   const [errors, setErrors] = useState<PolledResults["errors"]>({});
   const [loading, setLoading] = useState(true);
   const [nextAt, setNextAt] = useState(() => Date.now() + intervalMs);
   const [now, setNow] = useState(() => Date.now());
-  const key = chambers.join(",");
+  const key = `${chambers.join(",")}?${query}`;
   const chambersRef = useRef(chambers);
   chambersRef.current = chambers;
+  const queryRef = useRef(query);
+  queryRef.current = query;
 
   const poll = useCallback(async (signal: AbortSignal) => {
     const list = chambersRef.current;
-    const settled = await Promise.allSettled(list.map((c) => fetchChamber(c, signal)));
+    const settled = await Promise.allSettled(list.map((c) => fetchChamber(c, queryRef.current, signal)));
     if (signal.aborted) return;
     setData((prev) => {
       const next = { ...prev };

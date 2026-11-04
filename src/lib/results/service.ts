@@ -26,6 +26,16 @@ export interface ResultsPayload {
   aggregate: NormalizedRace | null;
 }
 
+/**
+ * Server-side filters applied to the cached chamber list. `scope: "statewide"` keeps only
+ * races whose source election type is `Statewide` (used for ballot measures, where local
+ * measures outnumber statewide ones roughly 10:1).
+ */
+export interface ResultsFilter {
+  state?: string;
+  scope?: "all" | "statewide";
+}
+
 /** Called after every successful upstream refresh (Phase 0 §3 snapshots plug in here). */
 export type RefreshHook = (chamber: Chamber, races: NormalizedRace[], fetchedAt: Date) => Promise<void>;
 
@@ -70,14 +80,20 @@ export class ResultsService {
    * chamber list, so it never costs an extra upstream request).
    *
    * @param chamber - Chamber to serve.
-   * @param state - Optional USPS code, already validated by the caller.
+   * @param filter - Optional state (USPS code, validated by the caller) and scope.
    * @throws When nothing is cached yet and the upstream load fails.
    */
-  async getResults(chamber: Chamber, state?: string): Promise<ResultsResponse> {
+  async getResults(chamber: Chamber, filter: ResultsFilter = {}): Promise<ResultsResponse> {
+    const { state, scope = "all" } = filter;
     const r = await this.cache.get(chamber, () => this.load(chamber));
-    const seats = r.value.filter((x) => x.kind === "seat");
-    const races = state ? seats.filter((x) => x.state === state) : seats;
-    const aggregate = state ? null : (r.value.find((x) => x.kind === "national_aggregate") ?? null);
+    const races = r.value.filter(
+      (x) =>
+        x.kind === "seat" &&
+        (!state || x.state === state) &&
+        (scope === "all" || x.electionType === "Statewide"),
+    );
+    const filtered = Boolean(state) || scope !== "all";
+    const aggregate = filtered ? null : (r.value.find((x) => x.kind === "national_aggregate") ?? null);
     return {
       payload: {
         chamber,

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { type TileModel, tileColors } from "@/lib/view/tiles";
 
 /** Props for {@link TileMap}. */
@@ -8,8 +9,8 @@ export interface TileMapProps {
 }
 
 /**
- * 11×8 tile-grid state map (positions from the Option B mockup). Each tile is a list item
- * with a full-sentence label, so the map is usable without seeing color.
+ * 11×8 tile-grid state map (positions from the Option B mockup). Each tile links to its
+ * state page and carries a full-sentence label, so the map is usable without seeing color.
  */
 export function TileMap({ tiles, label }: TileMapProps) {
   return (
@@ -22,14 +23,20 @@ export function TileMap({ tiles, label }: TileMapProps) {
         return (
           <li
             key={t.code}
-            aria-label={t.label}
             title={t.label}
             data-state={t.state}
             className="flex min-w-0 flex-col items-center justify-center overflow-hidden rounded-[5px] border leading-tight"
             style={{ gridColumn: t.col, gridRow: t.row, background: c.background, borderColor: c.border, color: c.color }}
           >
-            <span className="text-[11px] font-bold sm:text-[13px]">{t.code}</span>
-            <span className="hidden max-w-full truncate px-0.5 font-mono text-[9px] sm:block sm:text-[10px]">{t.sub}</span>
+            <Link
+              href={`/state/${t.code}`}
+              aria-label={t.label}
+              className="flex h-full w-full flex-col items-center justify-center no-underline"
+              style={{ color: c.color }}
+            >
+              <span className="text-[11px] font-bold sm:text-[13px]">{t.code}</span>
+              <span className="hidden max-w-full truncate px-0.5 font-mono text-[9px] sm:block sm:text-[10px]">{t.sub}</span>
+            </Link>
           </li>
         );
       })}

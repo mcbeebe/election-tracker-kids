@@ -3,12 +3,13 @@
 import { useMemo, useState } from "react";
 import type { Chamber } from "@/lib/providers/types";
 import { buildBop } from "@/lib/view/bop";
-import { formatPt } from "@/lib/view/format";
 import { buildHouseTiles, buildStateTiles, closestRaces } from "@/lib/view/tiles";
 import { BopBar } from "./bop/BopBar";
 import { TileMap } from "./map/TileMap";
 import { ClosestRaces } from "./races/ClosestRaces";
+import { SiteHeader } from "./SiteHeader";
 import { SourceBadge } from "./SourceBadge";
+import { StatusBanners } from "./StatusBanners";
 import { isStale, usePolledResults } from "./usePolledResults";
 
 type MapChamber = Exclude<Chamber, "measures">;
@@ -41,29 +42,13 @@ export function NationalView() {
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-[#F7F6F2] text-[#1B1F2A]">
-      <header className="flex w-full flex-wrap items-center gap-x-6 gap-y-2 border-b border-[#E2E0D8] bg-white px-4 py-3 sm:px-8">
-        <h1 className="m-0 font-serif text-[22px] font-bold">Midterm Tracker</h1>
-        <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
-          <SourceBadge source={active?.source ?? "civicapi"} asOf={oldest} stale={stale} />
-          <span className="font-mono text-xs text-[#5B6274]" aria-live="off">
-            next update in {nextIn}s
-          </span>
-        </div>
-      </header>
-
-      {active?.source === "fixtures" && (
-        <div role="note" className="w-full border-b border-[#C9B8F0] bg-[#F1ECFF] px-4 py-2 text-sm sm:px-8">
-          Development mode: replaying recorded civicAPI responses from Nov 4, 00:49–01:01 UTC. Not live results.
-        </div>
-      )}
-      {(stale || errorList.length > 0) && (
-        <div role="status" className="w-full border-b border-[#E9D8A6] bg-[#FFF7E0] px-4 py-2 text-sm sm:px-8">
-          {stale ? `Data may be out of date — last update ${formatPt(oldest)}. ` : ""}
-          {errorList.length > 0
-            ? `civicAPI is not responding for ${errorList.map(([c]) => TAB_LABEL[c as MapChamber] ?? c).join(", ")}; showing the last good data and retrying.`
-            : ""}
-        </div>
-      )}
+      <SiteHeader source={active?.source ?? "civicapi"} asOf={oldest} stale={stale} nextIn={nextIn} current="national" />
+      <StatusBanners
+        fixtures={active?.source === "fixtures"}
+        stale={stale}
+        oldest={oldest}
+        failing={errorList.map(([c]) => TAB_LABEL[c as MapChamber] ?? c)}
+      />
 
       <main className="flex w-full max-w-[1100px] flex-col gap-9 px-4 pt-7 pb-10 sm:px-6">
         <section aria-labelledby="bop-h" className="flex flex-col gap-4">

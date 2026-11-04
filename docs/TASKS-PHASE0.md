@@ -30,27 +30,41 @@ Tick boxes as you go; commit after each ticked item.
   - 174 tests; coverage on `src/lib`: 100% statements/lines/functions, 98.5% branches.
 
 ## 2. Cache + API routes (30 min)
-- [ ] `src/lib/cache/swr.ts` — in-memory per-chamber cache, 45s TTL, serve stale on error, `asOf` timestamp
-- [ ] `GET /api/results?chamber=senate|house|governor|measures` → `{asOf, source, races[]}`; `GET /api/health`
+- [x] `src/lib/cache/swr.ts` — in-memory per-chamber cache, 45s TTL, serve stale on error, `asOf` timestamp
+  - Single-flight loads; 15 s error cooldown, which also makes cold misses fail fast instead of starting a new 5-attempt retry cycle per request (found live at 01:01Z).
+- [x] `GET /api/results?chamber=senate|house|governor|measures` → `{asOf, source, races[]}`; `GET /api/health`
+  - Also `&state=XX` and `&scope=statewide`, both filtered from the cached list (no extra upstream calls). `races` = seats only; the national roll-up is returned separately as `aggregate`.
 - [ ] **Acceptance:** `curl localhost:3000/api/results?chamber=senate` returns 36 races with `asOf`; second call within 45s hits cache (log line)
+  - **Not yet verified live.** civicAPI `/race/search` returned 502/503/timeouts on every call from 01:01Z to at least 01:25Z (`/status` = 200 throughout). Verified against the real failure: 5 attempts at 1/2/4/8 s, then 503 + `Retry-After`; second call fails fast (25 ms). Cache-hit log line verified in unit tests. Expect **35 races + `aggregate`**, not 36 (the 36th row is the national roll-up).
 
 ## 3. Supabase snapshots (30 min) — skip to §4 if blocked, come back
-- [ ] `supabase/migrations/0001_init.sql` — `races, candidates, snapshots, overrides, provider_health` (see PLAN.md §5) + indexes
-- [ ] On each cache refresh, upsert `races/candidates`, insert `snapshots` (server-side only; service role key in env)
+- [x] `supabase/migrations/0001_init.sql` — `races, candidates, snapshots, overrides, provider_health` (see PLAN.md §5) + indexes
+  - Tested by applying it to an in-process Postgres (PGlite). RLS on, no policies (service role only). Race ids namespaced `civicapi:<id>`. Adds `races.kind`.
+- [x] On each cache refresh, upsert `races/candidates`, insert `snapshots` (server-side only; service role key in env)
+  - Wired only when `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` are set; DB errors are logged and never block results.
 - [ ] **Acceptance:** `select count(*) from snapshots` grows every refresh
+  - **Blocked — needs Mike:** no Supabase project exists for this app (the account has 6 projects, all for other apps; not reusing them). Creating one may cost money on this org. Migration is not applied anywhere.
 
 ## 4. National view (60 min) — Option B layout
-- [ ] `/` — header with source badge + "as of" + next-refresh countdown; BoP bars (called solid, leading hatched, uncalled gap, majority tick); chamber tabs
-- [ ] Tile-grid state map (`components/map/TileMap.tsx`, positions from `docs/mockups/*.dc.html` grid), colored by called status; "Show leading" toggle (default off)
+- [x] `/` — header with source badge + "as of" + next-refresh countdown; BoP bars (called solid, leading hatched, uncalled gap, majority tick); chamber tabs
+  - Senate holdovers derived from civicAPI's aggregate (34 D / 31 R before calls) and cross-checked. **Governors show races-up only (36):** no verified source for the 14 governors not up, so no "26 to win" bar.
+- [x] Tile-grid state map (`components/map/TileMap.tsx`, positions from `docs/mockups/*.dc.html` grid), colored by called status; "Show leading" toggle (default off)
+  - House tab: per-state called/total seats; solid only on a full sweep. Tiles link to `/state/XX`.
 - [ ] "Expected before voting" chip per race from `/forecast/{chamber}/2026/civicapi` (rating + %) — cached 10 min
-- [ ] Closest-races list (sorted by |margin|, with % reporting)
-- [ ] Client polls `/api/results` every 45s; shows stale banner if `asOf` > 3 min old
+  - **Not built:** `/forecast/*` returned 500/502 on every attempt since 01:16Z, so the shape is unverified and no fixture exists.
+- [x] Closest-races list (sorted by |margin|, with % reporting)
+  - Uncalled only; shows the arithmetic verdict (Too early/Open/Likely/Locked) with a caveat marker for unreliable estimates.
+- [x] Client polls `/api/results` every 45s; shows stale banner if `asOf` > 3 min old
 - [ ] **Acceptance:** 3 races spot-checked vs civicapi.org; renders at 390px; Lighthouse a11y ≥ 90
+  - 390px ✓ (no horizontal scroll). Lighthouse a11y **100** desktop + mobile. **Spot-check pending** (civicAPI down) — UI QA was done with `RESULTS_PROVIDER=fixtures` (dev-only replay of recorded payloads).
 
 ## 5. Measures + State views (45 min)
-- [ ] `/measures` — table with state filter + search; yes/no bar; % reporting
-- [ ] `/state/[code]` — that state's Senate/Gov/House/measures
-- [ ] **Acceptance:** CA page lists 52 House races + propositions
+- [x] `/measures` — table with state filter + search; yes/no bar; % reporting
+  - Statewide by default (`scope=statewide`); "Include local measures" opt-in (local ≈ 10× more rows). "Yes leads" ≠ passing: Passed/Failed only on a source call.
+- [x] `/state/[code]` — that state's Senate/Gov/House/measures
+  - Unknown codes 404. Tables collapse margin/% reporting/status into the main cell below 640px so % reporting stays visible.
+- [x] **Acceptance:** CA page lists 52 House races + propositions
+  - On recorded fixtures: 52 House races, governor, 65 measures (CA propositions are typed `Referendum` in civicAPI). Lighthouse a11y 100 desktop + mobile.
 
 ## 6. Deploy (15 min)
 - [ ] Vercel project `election-tracker-kids` (Hobby). Env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CIVICAPI_BASE`

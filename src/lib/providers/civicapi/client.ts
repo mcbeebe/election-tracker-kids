@@ -99,13 +99,14 @@ export class CivicApiClient {
    *
    * @param path - Path under the base URL, e.g. `/race/search`.
    * @param query - Query params; `undefined` values are dropped.
+   * @param opts - `retry: false` makes a single attempt (health pings must answer fast).
    * @returns Parsed JSON as `unknown` — callers must Zod-parse it.
    * @throws {@link CivicApiError} after retries are exhausted or on a non-retryable error.
    */
-  getJson(path: string, query: Query = {}): Promise<unknown> {
+  getJson(path: string, query: Query = {}, opts: { retry?: boolean } = {}): Promise<unknown> {
     const url = this.buildUrl(path, query);
     return withRetry((attempt) => this.attempt(url, attempt), {
-      delaysMs: this.opts.backoffMs,
+      delaysMs: opts.retry === false ? [] : this.opts.backoffMs,
       sleep: this.opts.sleep,
       isRetryable: (e) => e instanceof CivicApiError && e.retryable,
       onRetry: ({ attempt, delayMs, error }) =>

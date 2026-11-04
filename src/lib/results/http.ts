@@ -24,10 +24,11 @@ const QuerySchema = z.object({
     .transform((s) => s.toUpperCase())
     .refine((s) => US_STATE_CODES.has(s), { message: "unknown state code" })
     .optional(),
+  scope: z.enum(["all", "statewide"]).optional(),
 });
 
 /**
- * Handle `GET /api/results?chamber=…[&state=XX]`.
+ * Handle `GET /api/results?chamber=…[&state=XX][&scope=all|statewide]`.
  *
  * @param params - Request query string.
  * @param service - Results service.
@@ -36,6 +37,7 @@ export async function handleResults(params: URLSearchParams, service: ResultsSer
   const parsed = QuerySchema.safeParse({
     chamber: params.get("chamber") ?? undefined,
     state: params.get("state") ?? undefined,
+    scope: params.get("scope") ?? undefined,
   });
   if (!parsed.success) {
     return {
@@ -45,9 +47,9 @@ export async function handleResults(params: URLSearchParams, service: ResultsSer
       background: null,
     };
   }
-  const { chamber, state } = parsed.data;
+  const { chamber, state, scope } = parsed.data;
   try {
-    const { payload, refresh } = await service.getResults(chamber, state);
+    const { payload, refresh } = await service.getResults(chamber, { state, scope });
     return { status: 200, body: payload, headers: { "Cache-Control": SUCCESS_CACHE_CONTROL }, background: refresh };
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);

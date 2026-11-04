@@ -54,9 +54,25 @@ describe("ResultsService.getResults", () => {
     vi.spyOn(console, "info").mockImplementation(() => undefined);
     const { service, provider } = setup();
     await service.getResults("senate");
-    const { payload } = await service.getResults("senate", "GA");
+    const { payload } = await service.getResults("senate", { state: "GA" });
     expect(payload.races.map((r) => r.id)).toEqual(["2"]);
     expect(payload.aggregate).toBeNull();
+    expect(provider.listRaces).toHaveBeenCalledTimes(1);
+  });
+
+  it("scope=statewide keeps only Statewide races and drops the aggregate", async () => {
+    vi.spyOn(console, "info").mockImplementation(() => undefined);
+    const clock = fakeClock(0);
+    const provider = fakeProvider({
+      measures: [
+        race("s", { chamber: "measures", electionType: "Statewide" }),
+        race("l", { chamber: "measures", electionType: "Local", locality: "Jasper" }),
+      ],
+    });
+    const service = new ResultsService({ provider, ttlMs: 45_000, now: clock.now });
+    const { payload } = await service.getResults("measures", { scope: "statewide" });
+    expect(payload.races.map((r) => r.id)).toEqual(["s"]);
+    expect((await service.getResults("measures")).payload.races).toHaveLength(2);
     expect(provider.listRaces).toHaveBeenCalledTimes(1);
   });
 

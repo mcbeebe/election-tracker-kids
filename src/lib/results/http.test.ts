@@ -27,7 +27,14 @@ describe("handleResults", () => {
     expect((r.body as { races: { id: string }[] }).races.map((x) => x.id)).toEqual(["1"]);
   });
 
+  it("passes scope through", async () => {
+    const getResults = vi.fn(async () => ({ payload: {}, refresh: null }));
+    await handleResults(q("chamber=measures&scope=statewide&state=ca"), { getResults } as unknown as ResultsService);
+    expect(getResults).toHaveBeenCalledWith("measures", { state: "CA", scope: "statewide" });
+  });
+
   it.each([
+    ["chamber=measures&scope=local", "scope"],
     ["", "chamber"],
     ["chamber=Senate", "chamber"],
     ["chamber=president", "chamber"],
