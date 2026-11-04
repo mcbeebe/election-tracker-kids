@@ -1,4 +1,4 @@
-# midterm-tracker
+# election-tracker-kids
 
 Real-time dashboard and map of the November 3, 2026 US midterm election results —
 Senate, House, Governors, and ballot measures. Personal project.

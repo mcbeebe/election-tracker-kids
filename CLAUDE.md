@@ -1,4 +1,4 @@
-# CLAUDE.md — midterm-tracker
+# CLAUDE.md — election-tracker-kids
 
 Real-time dashboard + map of the Nov 3, 2026 US midterm results (Senate, House, Governors, ballot
 measures) with a Kid Mode layer. Personal project for Mike Beebe. Read `docs/PLAN.md` first.

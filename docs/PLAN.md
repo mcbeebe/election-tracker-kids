@@ -1,7 +1,7 @@
-# Midterm Tracker — Plan v0.2
+# Election Tracker (Kids) — Plan v0.2
 
 **Owner:** Mike Beebe · **Status:** Approved for Phase 0 · **Date:** 2026-11-03 (Election Day) · v0.1 archived in `docs/Archive/`
-**Repo:** `mcbeebe/midterm-tracker` (private) · **Audience:** personal use
+**Repo:** `mcbeebe/election-tracker-kids` (private) · **Audience:** personal use
 
 ---
 
@@ -19,7 +19,7 @@ never implies "leading = won," and captures every refresh so the night can be re
 | D2 | Add state Secretary of State / county sites as a second adapter family (Phase 1) |
 | D3 | Scope: Senate + House + Governors + ballot measures |
 | D4 | Personal use only (no public distribution → no licensing exposure) |
-| D5 | Version control in GitHub `mcbeebe/midterm-tracker`; commit everything |
+| D5 | Version control in GitHub `mcbeebe/election-tracker-kids`; commit everything |
 | D6 | UI: Option B (editorial, light) as base · Kid Mode as a toggle · Option C table as "Grown-up" tab · Option A dropped |
 | D7 | Probabilities: show sourced forecasts + live markets + catch-up arithmetic now; build our own model in Phase 2 behind a validation gate (`docs/FORECAST-MODEL.md`) |
 | D8 | AI-written analysis ("What's moving this?") grounded only in our structured data, labeled "AI summary"; Phase 1 |
@@ -171,7 +171,7 @@ Views, in priority order:
 
 ## 11. Open items
 
-1. GitHub repo `mcbeebe/midterm-tracker` — Mike creating; attach + push when ready.
+1. GitHub repo `mcbeebe/election-tracker-kids` — Mike creating; attach + push when ready.
 2. Supabase project — new vs. existing (unanswered; Phase 0 §3 can be skipped and backfilled).
 3. Anthropic API key for Phase 1 AI summaries — Mike obtaining.
 4. Watchlist races to seed.

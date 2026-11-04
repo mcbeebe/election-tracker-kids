@@ -13,7 +13,7 @@ Tick boxes as you go; commit after each ticked item.
 ## 1. Provider layer (60 min)
 - [ ] `src/lib/providers/types.ts` — `ResultsProvider`, `NormalizedRace`, `NormalizedCandidate`, `RaceScope`, `ProviderHealth` (+ JSDoc)
 - [ ] `src/lib/providers/civicapi/schema.ts` — Zod schemas for search result + race detail (derive from `docs/fixtures/*.json`)
-- [ ] `src/lib/providers/civicapi/client.ts` — fetch with 8s timeout, ≤1 req/s token bucket + jitter, backoff 1s→2s→4s→8s on 5xx/empty body, `User-Agent: midterm-tracker/0.1 (personal)`
+- [ ] `src/lib/providers/civicapi/client.ts` — fetch with 8s timeout, ≤1 req/s token bucket + jitter, backoff 1s→2s→4s→8s on 5xx/empty body, `User-Agent: election-tracker-kids/0.1 (personal)`
 - [ ] `src/lib/providers/civicapi/index.ts` — `listRaces({chamber})` using exact type strings (see CLAUDE.md gotchas); paginate `Referendum` with `offset`
 - [ ] `src/lib/normalize/*` — party→color, `CA-01` → `{state, district}`, `status(race)` → `called | leading | counting | not_started`, `catchUp(race)` → `too_early | open | likely | locked` (margin vs. estimated outstanding = total/pct_reporting − total; mark `unreliable` when pct_reporting < 5 or state ∈ {CA, AZ, NV, WA, OR, UT, CO})
 - [ ] Tests: schema parses all fixtures; normalizers; backoff sequence; token bucket. **Acceptance:** `pnpm test` green, ≥90% coverage on `lib/`.
@@ -42,7 +42,7 @@ Tick boxes as you go; commit after each ticked item.
 - [ ] **Acceptance:** CA page lists 52 House races + propositions
 
 ## 6. Deploy (15 min)
-- [ ] Vercel project `midterm-tracker` (Hobby). Env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CIVICAPI_BASE`
+- [ ] Vercel project `election-tracker-kids` (Hobby). Env: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `CIVICAPI_BASE`
 - [ ] Verify live URL on phone. Commit tag `v0.1.0-tonight`
 
 ## Deferred to Phase 1 (do not start tonight)
