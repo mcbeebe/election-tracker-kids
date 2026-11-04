@@ -1,0 +1,34 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+build/
+dist/
+
+# env / secrets
+.env
+.env*.local
+.vercel
+supabase/.temp/
+
+# testing
+coverage/
+playwright-report/
+test-results/
+
+# misc
+.DS_Store
+*.pem
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.turbo/
+*.tsbuildinfo
+next-env.d.ts
+
+# archive of superseded artifacts lives in-repo on purpose (docs/Archive/) — not ignored

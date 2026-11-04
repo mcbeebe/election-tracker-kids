@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option C — Split Panel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#111827;color:#E5E7EB;font-family:Inter,system-ui,sans-serif}
+a{color:#93B4F0}a:hover{color:#C3D6F8}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1000px; box-sizing: border-box; background: #111827; color: #E5E7EB; font-family: Inter, system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <!-- Toolbar -->
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 12px 24px; background: #0B1120; border-bottom: 1px solid #1F2A3F">
+    <h1 style="margin: 0; font-size: 16px; font-weight: 700; margin-right: 8px">Midterm Tracker</h1>
+    <div role="group" aria-label="Chamber" style="display: flex; gap: 2px; background: #111827; border-radius: 8px; padding: 3px">
+      <button type="button" style="padding: 7px 12px; border: 0; border-radius: 6px; background: #2A3A5C; color: #FFFFFF; font-size: 13px; font-weight: 600; cursor: pointer">Senate</button>
+      <button type="button" style="padding: 7px 12px; border: 0; border-radius: 6px; background: transparent; color: #AAB4C8; font-size: 13px; font-weight: 500; cursor: pointer">House</button>
+      <button type="button" style="padding: 7px 12px; border: 0; border-radius: 6px; background: transparent; color: #AAB4C8; font-size: 13px; font-weight: 500; cursor: pointer">Governor</button>
+      <button type="button" style="padding: 7px 12px; border: 0; border-radius: 6px; background: transparent; color: #AAB4C8; font-size: 13px; font-weight: 500; cursor: pointer">Measures</button>
+    </div>
+    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #AAB4C8">State <select style="background: #111827; color: #E5E7EB; border: 1px solid #2A3A5C; border-radius: 6px; padding: 6px 8px; font-size: 13px"><option>All</option><option>California</option></select></label>
+    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #AAB4C8">Status <select style="background: #111827; color: #E5E7EB; border: 1px solid #2A3A5C; border-radius: 6px; padding: 6px 8px; font-size: 13px"><option>Uncalled first</option><option>Closest margin</option><option>Called</option></select></label>
+    <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #AAB4C8"><input type="checkbox" style="width: 16px; height: 16px; accent-color: #93B4F0"> Watchlist only</label>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #AAB4C8">
+      <span style="padding: 4px 10px; border: 1px solid #2A3A5C; border-radius: 999px">civicAPI · 7:42 PM PT</span>
+      <span style="padding: 4px 10px; border-radius: 999px; background: #123524; color: #7EE2A8">● live</span>
+    </div>
+  </header>
+
+  <!-- Compact BoP -->
+  <section aria-label="Balance of power" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 14px 24px 0">
+    <sc-for list="{{chambers}}" as="ch" hint-placeholder-count="3">
+      <div style="display: flex; align-items: center; gap: 12px; background: #161F33; border: 1px solid #1F2A3F; border-radius: 10px; padding: 10px 14px">
+        <span style="font-size: 12px; font-weight: 600; color: #AAB4C8; text-transform: uppercase; letter-spacing: 0.08em; width: 72px">{{ch.name}}</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; color: #7FA9EA">{{ch.d}}</span>
+        <div style="flex: 1; height: 10px; border-radius: 5px; background: #1F2A3F; overflow: hidden; display: flex"><div style="width: {{ch.dPct}}%; background: #3A6FB7"></div><div style="width: {{ch.dLeadPct}}%; background: repeating-linear-gradient(135deg, #3A6FB7 0 3px, #161F33 3px 6px)"></div><div style="flex: 1"></div><div style="width: {{ch.rLeadPct}}%; background: repeating-linear-gradient(135deg, #C0463F 0 3px, #161F33 3px 6px)"></div><div style="width: {{ch.rPct}}%; background: #C0463F"></div></div>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 600; color: #E88A84">{{ch.r}}</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8B96AD; width: 64px; text-align: right">{{ch.needed}} to win</span>
+      </div>
+    </sc-for>
+  </section>
+
+  <!-- Split: map left, table right -->
+  <section style="display: flex; flex-wrap: wrap; gap: 14px; padding: 14px 24px 20px; flex: 1">
+    <div style="flex: 999 1 560px; min-width: 0; background: #161F33; border: 1px solid #1F2A3F; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px">
+        <h2 style="margin: 0; font-size: 14px; font-weight: 600">Senate · 35 races · map follows table filters</h2>
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #AAB4C8"><input type="checkbox" checked style="width: 16px; height: 16px; accent-color: #93B4F0"> Show leading</label>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); grid-template-rows: repeat(8, 54px); gap: 5px" role="img" aria-label="Tile map of states colored by Senate race status">
+        <sc-for list="{{tiles}}" as="t" hint-placeholder-count="50">
+          <div style="grid-column: {{t.c}}; grid-row: {{t.r}}; border-radius: 5px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; background: {{t.bg}}; border: 1px solid {{t.border}}; color: {{t.fg}}">
+            <span style="font-weight: 700; font-size: 13px">{{t.code}}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px">{{t.sub}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <!-- Selected state detail strip -->
+      <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 12px 14px; background: #0B1120; border-radius: 8px; border: 1px solid #1F2A3F">
+        <span style="font-size: 13px; font-weight: 600">Selected: Texas</span>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #AAB4C8">Senate 61% in · Gov 58% in · 38 House seats (12 called) · 0 measures</span>
+        <a href="#tx" style="margin-left: auto; font-size: 13px; font-weight: 600">Open state page →</a>
+      </div>
+    </div>
+
+    <div style="flex: 1 1 440px; min-width: 0; background: #161F33; border: 1px solid #1F2A3F; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid #1F2A3F">
+        <h2 style="margin: 0; font-size: 14px; font-weight: 600">Races</h2>
+        <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8B96AD">35 shown · sorted by margin</span>
+        <input type="search" placeholder="Find race or candidate" aria-label="Find race" style="margin-left: auto; background: #0B1120; color: #E5E7EB; border: 1px solid #2A3A5C; border-radius: 6px; padding: 6px 10px; font-size: 13px; width: 170px">
+      </div>
+      <div style="overflow-x: auto">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; min-width: 420px">
+          <thead><tr style="text-align: left; color: #8B96AD; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em"><th style="padding: 10px 12px; font-weight: 600; width: 28px"><span aria-hidden="true">★</span></th><th style="padding: 10px 12px; font-weight: 600">Race</th><th style="padding: 10px 12px; font-weight: 600; text-align: right">Margin</th><th style="padding: 10px 12px; font-weight: 600; text-align: right">In</th><th style="padding: 10px 12px; font-weight: 600">Status</th></tr></thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+              <tr style="border-top: 1px solid #1F2A3F; background: {{r.rowBg}}">
+                <td style="padding: 9px 12px"><button type="button" aria-label="Toggle watchlist" style="border: 0; background: transparent; color: {{r.starColor}}; font-size: 14px; cursor: pointer; padding: 0">★</button></td>
+                <td style="padding: 9px 12px; font-weight: 500">{{r.name}}</td>
+                <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: {{r.marginColor}}">{{r.margin}}</td>
+                <td style="padding: 9px 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; color: #AAB4C8">{{r.rep}}</td>
+                <td style="padding: 9px 12px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: {{r.badgeBg}}; color: {{r.badgeFg}}">{{r.status}}</span></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top: auto; padding: 10px 14px; border-top: 1px solid #1F2A3F; font-size: 12px; color: #8B96AD; display: flex; justify-content: space-between"><span>Click a row to select on map</span><span style="font-family: 'IBM Plex Mono', monospace">1–10 of 35</span></div>
+    </div>
+  </section>
+
+  <footer style="padding: 10px 24px 16px; font-size: 12px; color: #8B96AD; border-top: 1px solid #1F2A3F">Results via civicAPI (unverified third party). "Called" = source winner flag or manual override — never this app's projection. Sample data for layout.</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"showLeading":{"editor":"boolean","default":true,"section":"Map"},"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = '#3A6FB7', R = '#C0463F';
+    const DH = 'repeating-linear-gradient(135deg, #3A6FB7 0 4px, #161F33 4px 8px)';
+    const RH = 'repeating-linear-gradient(135deg, #C0463F 0 4px, #161F33 4px 8px)';
+    const showLeading = this.props.showLeading ?? true;
+    const chambers = [
+      { name: 'Senate', needed: '51', d: 38, r: 41, dPct: 38, dLeadPct: 4, rLeadPct: 3, rPct: 41 },
+      { name: 'House', needed: '218', d: 112, r: 131, dPct: 25.7, dLeadPct: 8.3, rLeadPct: 6.7, rPct: 30.1 },
+      { name: 'Gov', needed: '26', d: 9, r: 11, dPct: 18, dLeadPct: 6, rLeadPct: 4, rPct: 22 }
+    ];
+    const grid = [
+      ['AK',1,1,'c'],['ME',1,11,'dl'],['WI',2,6,'c'],['VT',2,9,'n'],['NH',2,10,'dl'],
+      ['WA',3,1,'n'],['ID',3,2,'R'],['MT',3,3,'rl'],['ND',3,4,'n'],['MN',3,5,'D'],['IL',3,6,'D'],['MI',3,7,'c'],['NY',3,9,'n'],['MA',3,10,'D'],
+      ['OR',4,1,'D'],['NV',4,2,'n'],['WY',4,3,'R'],['SD',4,4,'R'],['IA',4,5,'c'],['IN',4,6,'R'],['OH',4,7,'c'],['PA',4,8,'n'],['NJ',4,9,'n'],['CT',4,10,'n'],['RI',4,11,'D'],
+      ['CA',5,1,'n'],['UT',5,2,'n'],['CO',5,3,'D'],['NE',5,4,'R'],['MO',5,5,'n'],['KY',5,6,'R'],['WV',5,7,'R'],['VA',5,8,'D'],['MD',5,9,'n'],['DE',5,10,'D'],
+      ['AZ',6,2,'n'],['NM',6,3,'D'],['KS',6,4,'R'],['AR',6,5,'R'],['TN',6,6,'R'],['NC',6,7,'c'],['SC',6,8,'R'],
+      ['OK',7,4,'R'],['LA',7,5,'rl'],['MS',7,6,'R'],['AL',7,7,'R'],['GA',7,8,'c'],
+      ['HI',8,1,'n'],['TX',8,4,'sel'],['FL',8,9,'rl']
+    ];
+    const tiles = grid.map(([code, r, c, s]) => {
+      let bg = '#1A2236', border = '#1F2A3F', fg = '#6B7890', sub = '—';
+      if (s === 'D') { bg = D; border = D; fg = '#FFFFFF'; sub = 'CALLED'; }
+      else if (s === 'R') { bg = R; border = R; fg = '#FFFFFF'; sub = 'CALLED'; }
+      else if (s === 'dl') { bg = showLeading ? DH : '#2A3A5C'; border = D; fg = '#E5E7EB'; sub = 'D +2.4'; }
+      else if (s === 'rl') { bg = showLeading ? RH : '#2A3A5C'; border = R; fg = '#E5E7EB'; sub = 'R +1.1'; }
+      else if (s === 'c') { bg = '#2A3A5C'; border = '#2A3A5C'; fg = '#E5E7EB'; sub = '31%'; }
+      else if (s === 'sel') { bg = '#2A3A5C'; border = '#F5C451'; fg = '#FFFFFF'; sub = '61%'; }
+      return { code, r, c, bg, border, fg, sub };
+    });
+    const rows = [
+      { name: 'Texas US Senate', margin: 'D +0.8', rep: '61%', status: 'COUNTING', star: true, sel: true },
+      { name: 'Georgia US Senate', margin: 'D +1.2', rep: '72%', status: 'COUNTING', star: true },
+      { name: 'North Carolina US Senate', margin: 'R +1.2', rep: '55%', status: 'COUNTING', star: true },
+      { name: 'Michigan US Senate', margin: 'D +2.5', rep: '44%', status: 'COUNTING' },
+      { name: 'Maine US Senate', margin: 'D +2.4', rep: '88%', status: 'D LEADING' },
+      { name: 'New Hampshire US Senate', margin: 'D +3.0', rep: '79%', status: 'D LEADING' },
+      { name: 'Iowa US Senate', margin: 'R +4.2', rep: '67%', status: 'COUNTING' },
+      { name: 'Ohio US Senate Special', margin: 'R +5.1', rep: '69%', status: 'COUNTING' },
+      { name: 'Florida US Senate Special', margin: 'R +9.8', rep: '91%', status: 'R CALLED' },
+      { name: 'Colorado US Senate', margin: 'D +11.0', rep: '58%', status: 'D CALLED' }
+    ].map(x => ({
+      ...x,
+      rowBg: x.sel ? '#1C2A47' : 'transparent',
+      starColor: x.star ? '#F5C451' : '#3A4866',
+      marginColor: x.margin.startsWith('D') ? '#7FA9EA' : '#E88A84',
+      badgeBg: x.status === 'D CALLED' ? '#1C2E4A' : x.status === 'R CALLED' ? '#4A1F1F' : x.status === 'D LEADING' ? '#1C2E4A' : '#2A3A5C',
+      badgeFg: x.status === 'R CALLED' ? '#F0A09A' : (x.status === 'D CALLED' || x.status === 'D LEADING') ? '#9DB8E6' : '#E5E7EB'
+    }));
+    return { chambers, tiles, rows };
+  }
+}
+</script>
+</body>
+</html>

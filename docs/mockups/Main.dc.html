@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option A — Command Center</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0E1320;color:#E6EAF2;font-family:'IBM Plex Sans',system-ui,sans-serif}
+a{color:#9DB8E6}a:hover{color:#C9DAF5}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1180px; box-sizing: border-box; background: #0E1320; color: #E6EAF2; font-family: 'IBM Plex Sans', system-ui, sans-serif; display: flex; flex-direction: column">
+
+  <!-- Top bar -->
+  <header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding: 14px 28px; border-bottom: 1px solid #243047; background: #0B1019">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <div style="width: 10px; height: 10px; border-radius: 50%; background: #3ED598" aria-hidden="true"></div>
+      <h1 style="margin: 0; font-size: 18px; font-weight: 700; letter-spacing: 0.01em">Midterm Tracker · Nov 3, 2026</h1>
+    </div>
+    <nav aria-label="Views" style="display: flex; gap: 4px; flex-wrap: wrap">
+      <a href="#national" style="padding: 8px 14px; border-radius: 8px; background: #1C2740; color: #FFFFFF; font-size: 14px; font-weight: 600; text-decoration: none">National</a>
+      <a href="#states" style="padding: 8px 14px; border-radius: 8px; color: #B7C3D9; font-size: 14px; font-weight: 500; text-decoration: none">States</a>
+      <a href="#measures" style="padding: 8px 14px; border-radius: 8px; color: #B7C3D9; font-size: 14px; font-weight: 500; text-decoration: none">Ballot measures</a>
+      <a href="#watchlist" style="padding: 8px 14px; border-radius: 8px; color: #B7C3D9; font-size: 14px; font-weight: 500; text-decoration: none">Watchlist</a>
+    </nav>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #B7C3D9">
+      <span style="padding: 5px 10px; border: 1px solid #2B3A57; border-radius: 999px">Source: civicAPI</span>
+      <span style="padding: 5px 10px; border: 1px solid #2B3A57; border-radius: 999px">As of 7:42:10 PM PT</span>
+      <span style="padding: 5px 10px; border-radius: 999px; background: #16331F; color: #7EE2A8">Next refresh 38s</span>
+    </div>
+  </header>
+
+  <!-- Balance of power strip -->
+  <section id="national" aria-label="Balance of power" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; padding: 20px 28px 8px">
+    <sc-for list="{{chambers}}" as="ch" hint-placeholder-count="3">
+      <div style="background: #141B2B; border: 1px solid #243047; border-radius: 12px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline">
+          <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #B7C3D9; text-transform: uppercase; letter-spacing: 0.08em">{{ch.name}}</h2>
+          <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8C9BB5">{{ch.needed}} to control</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end">
+          <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 40px; font-weight: 600; color: #6FA0E8; line-height: 1">{{ch.d}}</span><span style="font-size: 13px; color: #8C9BB5">Dem called</span></div>
+          <div style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 13px; color: #8C9BB5">GOP called</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 40px; font-weight: 600; color: #E0706A; line-height: 1">{{ch.r}}</span></div>
+        </div>
+        <div style="position: relative; height: 14px; border-radius: 7px; background: #23304A; overflow: hidden; display: flex">
+          <div style="width: {{ch.dPct}}%; background: #3A6FB7"></div>
+          <div style="width: {{ch.dLeadPct}}%; background: repeating-linear-gradient(135deg, #3A6FB7 0 4px, #1C2740 4px 8px); opacity: 0.8"></div>
+          <div style="flex: 1"></div>
+          <div style="width: {{ch.rLeadPct}}%; background: repeating-linear-gradient(135deg, #C0463F 0 4px, #1C2740 4px 8px); opacity: 0.8"></div>
+          <div style="width: {{ch.rPct}}%; background: #C0463F"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #8C9BB5">
+          <span>{{ch.dLead}} leading · {{ch.notUp}} not up</span>
+          <span>{{ch.uncalled}} uncalled</span>
+          <span>{{ch.rLead}} leading</span>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+
+  <!-- Map + rail -->
+  <section style="display: flex; flex-wrap: wrap; gap: 16px; padding: 12px 28px 20px">
+    <div style="flex: 999 1 640px; min-width: 0; background: #141B2B; border: 1px solid #243047; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <div role="group" aria-label="Chamber" style="display: flex; gap: 2px; background: #0E1320; border-radius: 8px; padding: 3px">
+          <button type="button" style="padding: 7px 14px; border: 0; border-radius: 6px; background: #2B3A57; color: #FFFFFF; font-size: 13px; font-weight: 600; cursor: pointer">Senate</button>
+          <button type="button" style="padding: 7px 14px; border: 0; border-radius: 6px; background: transparent; color: #B7C3D9; font-size: 13px; font-weight: 500; cursor: pointer">House</button>
+          <button type="button" style="padding: 7px 14px; border: 0; border-radius: 6px; background: transparent; color: #B7C3D9; font-size: 13px; font-weight: 500; cursor: pointer">Governor</button>
+          <button type="button" style="padding: 7px 14px; border: 0; border-radius: 6px; background: transparent; color: #B7C3D9; font-size: 13px; font-weight: 500; cursor: pointer">Measures</button>
+        </div>
+        <label style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #B7C3D9"><input type="checkbox" style="width: 16px; height: 16px; accent-color: #6FA0E8"> Show leading (hatched)</label>
+      </div>
+
+      <!-- Tile grid map -->
+      <div style="display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); grid-template-rows: repeat(8, 56px); gap: 6px; padding: 8px 4px" role="img" aria-label="Tile map of states colored by Senate race status">
+        <sc-for list="{{tiles}}" as="t" hint-placeholder-count="50">
+          <div style="grid-column: {{t.c}}; grid-row: {{t.r}}; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: {{t.bg}}; border: 1px solid {{t.border}}; color: {{t.fg}}">
+            <span style="font-weight: 700; font-size: 14px">{{t.code}}</span>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; opacity: 0.85">{{t.sub}}</span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 18px; font-size: 12px; color: #B7C3D9; align-items: center">
+        <span style="display: flex; align-items: center; gap: 6px"><i style="width: 14px; height: 14px; border-radius: 3px; background: #3A6FB7; display: inline-block"></i> Dem called</span>
+        <span style="display: flex; align-items: center; gap: 6px"><i style="width: 14px; height: 14px; border-radius: 3px; background: #C0463F; display: inline-block"></i> GOP called</span>
+        <span style="display: flex; align-items: center; gap: 6px"><i style="width: 14px; height: 14px; border-radius: 3px; background: repeating-linear-gradient(135deg, #3A6FB7 0 3px, #141B2B 3px 6px); display: inline-block"></i> Leading (not called)</span>
+        <span style="display: flex; align-items: center; gap: 6px"><i style="width: 14px; height: 14px; border-radius: 3px; background: #2B3A57; display: inline-block"></i> Counting</span>
+        <span style="display: flex; align-items: center; gap: 6px"><i style="width: 14px; height: 14px; border-radius: 3px; background: #1A2130; border: 1px solid #243047; display: inline-block"></i> No race</span>
+        <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; color: #8C9BB5">Click a state for detail →</span>
+      </div>
+    </div>
+
+    <!-- Right rail: key races -->
+    <aside style="flex: 1 1 360px; min-width: 0; background: #141B2B; border: 1px solid #243047; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #B7C3D9; text-transform: uppercase; letter-spacing: 0.08em">Key races</h2>
+        <a href="#watchlist" style="font-size: 12px">Edit watchlist</a>
+      </div>
+      <sc-for list="{{races}}" as="rc" hint-placeholder-count="6">
+        <article style="display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid #243047">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px">
+            <h3 style="margin: 0; font-size: 14px; font-weight: 600">{{rc.name}}</h3>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: {{rc.badgeBg}}; color: {{rc.badgeFg}}">{{rc.status}}</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr auto auto; gap: 4px 12px; font-size: 13px">
+            <span style="color: #E6EAF2">{{rc.c1}}</span><span style="font-family: 'IBM Plex Mono', monospace; color: #B7C3D9; text-align: right">{{rc.v1}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; text-align: right; color: {{rc.col1}}">{{rc.p1}}</span>
+            <span style="color: #E6EAF2">{{rc.c2}}</span><span style="font-family: 'IBM Plex Mono', monospace; color: #B7C3D9; text-align: right">{{rc.v2}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; text-align: right; color: {{rc.col2}}">{{rc.p2}}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8C9BB5">
+            <div style="flex: 1; height: 4px; border-radius: 2px; background: #23304A; overflow: hidden"><div style="height: 100%; width: {{rc.rep}}%; background: #8C9BB5"></div></div>
+            <span>{{rc.rep}}% reporting</span>
+          </div>
+        </article>
+      </sc-for>
+    </aside>
+  </section>
+
+  <!-- Ballot measures strip -->
+  <section id="measures" aria-label="Ballot measures" style="padding: 0 28px 28px">
+    <div style="background: #141B2B; border: 1px solid #243047; border-radius: 12px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #B7C3D9; text-transform: uppercase; letter-spacing: 0.08em">Ballot measures · 599 tracked</h2>
+        <label style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #B7C3D9">State <select style="background: #0E1320; color: #E6EAF2; border: 1px solid #2B3A57; border-radius: 6px; padding: 6px 8px; font-size: 13px"><option>California</option><option>All states</option></select></label>
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #B7C3D9">Search <input type="search" placeholder="Prop, topic…" style="background: #0E1320; color: #E6EAF2; border: 1px solid #2B3A57; border-radius: 6px; padding: 6px 10px; font-size: 13px; width: 180px"></label>
+      </div>
+      <div style="overflow-x: auto">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px; min-width: 760px">
+          <thead><tr style="color: #8C9BB5; text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em">
+            <th style="padding: 8px; font-weight: 600">Measure</th><th style="padding: 8px; font-weight: 600">State</th><th style="padding: 8px; font-weight: 600; text-align: right">Yes</th><th style="padding: 8px; font-weight: 600; text-align: right">No</th><th style="padding: 8px; font-weight: 600; text-align: right">Reporting</th><th style="padding: 8px; font-weight: 600">Status</th>
+          </tr></thead>
+          <tbody>
+            <sc-for list="{{measures}}" as="m" hint-placeholder-count="4">
+              <tr style="border-top: 1px solid #243047">
+                <td style="padding: 10px 8px; font-weight: 500">{{m.name}}</td>
+                <td style="padding: 10px 8px; color: #B7C3D9">{{m.state}}</td>
+                <td style="padding: 10px 8px; text-align: right; font-family: 'IBM Plex Mono', monospace">{{m.yes}}</td>
+                <td style="padding: 10px 8px; text-align: right; font-family: 'IBM Plex Mono', monospace">{{m.no}}</td>
+                <td style="padding: 10px 8px; text-align: right; font-family: 'IBM Plex Mono', monospace; color: #B7C3D9">{{m.rep}}</td>
+                <td style="padding: 10px 8px; color: #B7C3D9">{{m.status}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer style="margin-top: auto; padding: 12px 28px 18px; font-size: 12px; color: #8C9BB5; border-top: 1px solid #243047; display: flex; flex-wrap: wrap; gap: 12px">
+    <span>Results via civicAPI (unverified third party). "Called" reflects the source's winner flag or a manual override — never this app's own projection.</span>
+    <span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace">snapshot #412 · 1,104 races polled · 0 errors last 10 min</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#6FA0E8","section":"Theme"},"showLeading":{"editor":"boolean","default":true,"section":"Map"},"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = '#3A6FB7', R = '#C0463F';
+    const DH = 'repeating-linear-gradient(135deg, #3A6FB7 0 4px, #141B2B 4px 8px)';
+    const RH = 'repeating-linear-gradient(135deg, #C0463F 0 4px, #141B2B 4px 8px)';
+    const showLeading = this.props.showLeading ?? true;
+    // Sample data for layout only.
+    const chambers = [
+      { name: 'Senate', needed: '51', d: 38, r: 41, dLead: 4, rLead: 3, uncalled: 14, notUp: 0, dPct: 38, dLeadPct: 4, rLeadPct: 3, rPct: 41 },
+      { name: 'House', needed: '218', d: 112, r: 131, dLead: 36, rLead: 29, uncalled: 127, notUp: 0, dPct: 25.7, dLeadPct: 8.3, rLeadPct: 6.7, rPct: 30.1 },
+      { name: 'Governors', needed: '26', d: 9, r: 11, dLead: 3, rLead: 2, uncalled: 11, notUp: 14, dPct: 18, dLeadPct: 6, rLeadPct: 4, rPct: 22 }
+    ];
+    // Tile-grid layout (row, col) + sample Senate status: D, R, dl (D leading), rl, c (counting), n (no race)
+    const grid = [
+      ['AK',1,1,'c'],['ME',1,11,'dl'],
+      ['WI',2,6,'c'],['VT',2,9,'n'],['NH',2,10,'dl'],
+      ['WA',3,1,'n'],['ID',3,2,'R'],['MT',3,3,'rl'],['ND',3,4,'n'],['MN',3,5,'D'],['IL',3,6,'D'],['MI',3,7,'c'],['NY',3,9,'n'],['MA',3,10,'D'],
+      ['OR',4,1,'D'],['NV',4,2,'n'],['WY',4,3,'R'],['SD',4,4,'R'],['IA',4,5,'c'],['IN',4,6,'R'],['OH',4,7,'c'],['PA',4,8,'n'],['NJ',4,9,'n'],['CT',4,10,'n'],['RI',4,11,'D'],
+      ['CA',5,1,'n'],['UT',5,2,'n'],['CO',5,3,'D'],['NE',5,4,'R'],['MO',5,5,'n'],['KY',5,6,'R'],['WV',5,7,'R'],['VA',5,8,'D'],['MD',5,9,'n'],['DE',5,10,'D'],
+      ['AZ',6,2,'n'],['NM',6,3,'D'],['KS',6,4,'R'],['AR',6,5,'R'],['TN',6,6,'R'],['NC',6,7,'c'],['SC',6,8,'R'],
+      ['OK',7,4,'R'],['LA',7,5,'rl'],['MS',7,6,'R'],['AL',7,7,'R'],['GA',7,8,'c'],
+      ['HI',8,1,'n'],['TX',8,4,'c'],['FL',8,9,'rl']
+    ];
+    const tiles = grid.map(([code, r, c, s]) => {
+      let bg = '#1A2130', border = '#243047', fg = '#6B7A94', sub = '—';
+      if (s === 'D') { bg = D; border = D; fg = '#FFFFFF'; sub = 'CALLED'; }
+      else if (s === 'R') { bg = R; border = R; fg = '#FFFFFF'; sub = 'CALLED'; }
+      else if (s === 'dl') { bg = showLeading ? DH : '#2B3A57'; border = '#3A6FB7'; fg = '#E6EAF2'; sub = 'D +2.4'; }
+      else if (s === 'rl') { bg = showLeading ? RH : '#2B3A57'; border = '#C0463F'; fg = '#E6EAF2'; sub = 'R +1.1'; }
+      else if (s === 'c') { bg = '#2B3A57'; border = '#2B3A57'; fg = '#E6EAF2'; sub = '31%'; }
+      return { code, r, c, bg, border, fg, sub };
+    });
+    const races = [
+      { name: 'Texas US Senate', status: 'COUNTING', badgeBg: '#2B3A57', badgeFg: '#E6EAF2', c1: 'Candidate A (D)', v1: '2,104,318', p1: '49.1%', col1: '#6FA0E8', c2: 'Candidate B (R)', v2: '2,071,902', p2: '48.3%', col2: '#E0706A', rep: 61 },
+      { name: 'Georgia US Senate', status: 'COUNTING', badgeBg: '#2B3A57', badgeFg: '#E6EAF2', c1: 'Candidate A (D)', v1: '1,422,007', p1: '50.2%', col1: '#6FA0E8', c2: 'Candidate B (R)', v2: '1,388,411', p2: '49.0%', col2: '#E0706A', rep: 72 },
+      { name: 'Maine US Senate', status: 'D LEADING', badgeBg: '#1C2E4A', badgeFg: '#9DB8E6', c1: 'Candidate A (D)', v1: '301,114', p1: '51.2%', col1: '#6FA0E8', c2: 'Candidate B (R)', v2: '287,009', p2: '48.8%', col2: '#E0706A', rep: 88 },
+      { name: 'California US House 13', status: 'COUNTING', badgeBg: '#2B3A57', badgeFg: '#E6EAF2', c1: 'Candidate A (D)', v1: '48,210', p1: '50.9%', col1: '#6FA0E8', c2: 'Candidate B (R)', v2: '46,502', p2: '49.1%', col2: '#E0706A', rep: 19 },
+      { name: 'Florida Governor', status: 'R CALLED', badgeBg: '#4A1F1F', badgeFg: '#F0A09A', c1: 'Candidate B (R)', v1: '4,901,330', p1: '55.6%', col1: '#E0706A', c2: 'Candidate A (D)', v2: '3,812,118', p2: '43.2%', col2: '#6FA0E8', rep: 94 },
+      { name: 'California Proposition 3', status: 'COUNTING', badgeBg: '#2B3A57', badgeFg: '#E6EAF2', c1: 'Yes', v1: '2,310,440', p1: '58.0%', col1: '#E6EAF2', c2: 'No', v2: '1,672,900', p2: '42.0%', col2: '#E6EAF2', rep: 23 }
+    ];
+    const measures = [
+      { name: 'Proposition 3', state: 'CA', yes: '58.0%', no: '42.0%', rep: '23%', status: 'Counting' },
+      { name: 'Proposition 5 — Housing bond', state: 'CA', yes: '47.9%', no: '52.1%', rep: '23%', status: 'Counting' },
+      { name: 'State Issue 3 — Voter photo ID', state: 'OH', yes: '61.4%', no: '38.6%', rep: '77%', status: 'Yes leading' },
+      { name: 'Question 2 — Places of worship during emergencies', state: 'WI', yes: '52.8%', no: '47.2%', rep: '41%', status: 'Counting' }
+    ];
+    return { chambers, tiles, races, measures, accent: this.props.accent ?? '#6FA0E8' };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Option D — Kid Mode</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&amp;family=IBM+Plex+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#FFFBEF;color:#22262E;font-family:Nunito,system-ui,sans-serif}
+a{color:#2F5FA6}a:hover{color:#1F4280}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1500px; box-sizing: border-box; background: #FFFBEF; color: #22262E; font-family: Nunito, system-ui, sans-serif; display: flex; flex-direction: column; align-items: center">
+
+  <header style="width: 100%; box-sizing: border-box; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding: 16px 32px; background: #FFFFFF; border-bottom: 3px solid #FFD66B">
+    <h1 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.01em">Election Night!</h1>
+    <span style="font-size: 16px; font-weight: 700; color: #5B6274">Tuesday, November 3, 2026</span>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+      <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: #1F7A46; background: #E3F6EA; padding: 6px 12px; border-radius: 999px"><i style="width: 10px; height: 10px; border-radius: 50%; background: #1F9D55; display: inline-block"></i> Counting right now</span>
+      <button type="button" style="min-height: 44px; padding: 8px 16px; border: 2px solid #22262E; border-radius: 12px; background: #FFFFFF; font-family: inherit; font-size: 15px; font-weight: 800; cursor: pointer">Grown-up mode</button>
+    </div>
+  </header>
+
+  <main style="width: 100%; max-width: 1100px; box-sizing: border-box; padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 32px">
+
+    <!-- What's happening -->
+    <section aria-label="What is happening" style="background: #FFFFFF; border: 3px solid #22262E; border-radius: 20px; padding: 24px 28px; display: flex; flex-direction: column; gap: 10px">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 900">What's happening?</h2>
+      <p style="margin: 0; font-size: 20px; font-weight: 600; line-height: 1.45">Today, grown-ups all over the country voted. Right now, helpers are <strong>counting the votes</strong>. We know who won <strong>79 of the 100 Senate seats</strong> so far. The rest are still being counted — that's why some boxes are grey.</p>
+    </section>
+
+    <!-- Racetrack to majority -->
+    <section aria-label="Race to a majority" style="display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 26px; font-weight: 900">The race to 51</h2>
+        <p style="margin: 0; font-size: 16px; font-weight: 600; color: #5B6274">Whichever team gets 51 Senate seats gets to be in charge of the Senate.</p>
+      </div>
+      <div style="background: #FFFFFF; border: 3px solid #22262E; border-radius: 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 16px">
+        <sc-for list="{{lanes}}" as="ln" hint-placeholder-count="2">
+          <div style="display: grid; grid-template-columns: 120px minmax(0, 1fr) 70px; gap: 14px; align-items: center">
+            <div style="display: flex; align-items: center; gap: 10px"><span style="width: 34px; height: 34px; border-radius: 50%; background: {{ln.color}}; display: inline-block; border: 3px solid #22262E"></span><span style="font-size: 18px; font-weight: 900">{{ln.team}}</span></div>
+            <div style="position: relative; height: 44px; border-radius: 22px; background: repeating-linear-gradient(90deg, #F1EDE0 0 24px, #FFFFFF 24px 48px); border: 3px solid #22262E; overflow: hidden">
+              <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{ln.pct}}%; background: {{ln.color}}; border-radius: 0 22px 22px 0"></div>
+              <div style="position: absolute; left: 51%; top: -3px; bottom: -3px; width: 4px; background: repeating-linear-gradient(180deg, #22262E 0 6px, #FFFFFF 6px 12px)" aria-hidden="true"></div>
+              <span style="position: absolute; left: calc(51% + 10px); top: 10px; font-size: 13px; font-weight: 900; color: #22262E">FINISH · 51</span>
+            </div>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; text-align: right">{{ln.seats}}</span>
+          </div>
+        </sc-for>
+        <p style="margin: 0; font-size: 15px; font-weight: 600; color: #5B6274">Solid color = seats a team has <strong>won</strong>. Nobody has reached the finish line yet. 21 seats are still being counted.</p>
+      </div>
+    </section>
+
+    <!-- Seats as chairs -->
+    <section aria-label="Senate seats" style="display: flex; flex-wrap: wrap; gap: 24px">
+      <div style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 3px solid #22262E; border-radius: 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 900">100 chairs in the Senate</h2>
+        <div style="display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px" role="img" aria-label="100 Senate seats: 38 blue, 41 red, 21 still counting">
+          <sc-for list="{{chairs}}" as="c" hint-placeholder-count="100">
+            <div style="aspect-ratio: 1; border-radius: 8px; background: {{c.bg}}; border: 2px solid {{c.border}}"></div>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 15px; font-weight: 700">
+          <span style="display: flex; align-items: center; gap: 6px"><i style="width: 16px; height: 16px; border-radius: 4px; background: #3A6FB7; display: inline-block"></i> Blue team won · 38</span>
+          <span style="display: flex; align-items: center; gap: 6px"><i style="width: 16px; height: 16px; border-radius: 4px; background: #C0463F; display: inline-block"></i> Red team won · 41</span>
+          <span style="display: flex; align-items: center; gap: 6px"><i style="width: 16px; height: 16px; border-radius: 4px; background: repeating-linear-gradient(135deg, #D9D7CF 0 3px, #FFFFFF 3px 6px); border: 2px solid #D9D7CF; display: inline-block"></i> Still counting · 21</span>
+        </div>
+      </div>
+
+      <!-- Counting jars -->
+      <div style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 3px solid #22262E; border-radius: 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 900">How much is counted?</h2>
+        <p style="margin: 0; font-size: 15px; font-weight: 600; color: #5B6274">Each jar fills up as helpers count that state's votes. A full jar means they're done.</p>
+        <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; align-items: end">
+          <sc-for list="{{jars}}" as="j" hint-placeholder-count="5">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+              <div style="position: relative; width: 100%; max-width: 72px; height: 120px; border: 3px solid #22262E; border-top-width: 6px; border-radius: 10px 10px 16px 16px; background: #FFFFFF; overflow: hidden">
+                <div style="position: absolute; left: 0; right: 0; bottom: 0; height: {{j.pct}}%; background: #FFD66B"></div>
+              </div>
+              <span style="font-size: 16px; font-weight: 900">{{j.state}}</span>
+              <span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #5B6274">{{j.label}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- Our state: plain-language questions -->
+    <section aria-label="Questions California voted on" style="background: #FFFFFF; border: 3px solid #22262E; border-radius: 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 900">Questions California voted on</h2>
+        <p style="margin: 0; font-size: 15px; font-weight: 600; color: #5B6274">Grown-ups also answer yes-or-no questions on the ballot. Here are ours, in plain words.</p>
+      </div>
+      <sc-for list="{{props}}" as="p" hint-placeholder-count="3">
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: center; padding: 14px 0; border-top: 2px dashed #E6E2D3">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 13px; font-weight: 800; color: #5B6274; text-transform: uppercase; letter-spacing: 0.08em">{{p.id}}</span>
+            <span style="font-size: 18px; font-weight: 700; line-height: 1.35">{{p.question}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; height: 26px; border-radius: 13px; overflow: hidden; border: 2px solid #22262E"><div style="width: {{p.yes}}%; background: #6DBE7C; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900">YES {{p.yes}}%</div><div style="flex: 1; background: #F0A868; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900">NO {{p.no}}%</div></div>
+            <span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5B6274; text-align: right">{{p.rep}} counted</span>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <!-- Family picks game + words to know -->
+    <section style="display: flex; flex-wrap: wrap; gap: 24px">
+      <div style="flex: 1 1 420px; min-width: 0; background: #FFF4CC; border: 3px solid #22262E; border-radius: 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 900">Family picks</h2>
+        <p style="margin: 0; font-size: 15px; font-weight: 600; color: #5B6274">Before the counting, everyone guessed who would win 5 races. Points when you're right!</p>
+        <table style="width: 100%; border-collapse: collapse; font-size: 16px; font-weight: 700">
+          <thead><tr style="text-align: left; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: #5B6274"><th style="padding: 8px 6px">Player</th><th style="padding: 8px 6px; text-align: right">Right</th><th style="padding: 8px 6px; text-align: right">Waiting</th><th style="padding: 8px 6px; text-align: right">Points</th></tr></thead>
+          <tbody>
+            <sc-for list="{{players}}" as="pl" hint-placeholder-count="3">
+              <tr style="border-top: 2px solid #22262E"><td style="padding: 10px 6px">{{pl.name}}</td><td style="padding: 10px 6px; text-align: right; font-family: 'IBM Plex Mono', monospace">{{pl.right}}</td><td style="padding: 10px 6px; text-align: right; font-family: 'IBM Plex Mono', monospace">{{pl.waiting}}</td><td style="padding: 10px 6px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">{{pl.points}}</td></tr>
+            </sc-for>
+          </tbody>
+        </table>
+        <a href="#picks" style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center; align-self: flex-start; padding: 8px 18px; border: 3px solid #22262E; border-radius: 12px; background: #FFFFFF; font-size: 16px; font-weight: 900; text-decoration: none; color: #22262E">See everyone's picks</a>
+      </div>
+      <div style="flex: 1 1 420px; min-width: 0; background: #FFFFFF; border: 3px solid #22262E; border-radius: 20px; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 900">Words to know</h2>
+        <sc-for list="{{words}}" as="w" hint-placeholder-count="5">
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-top: 2px dashed #E6E2D3">
+            <span style="font-size: 17px; font-weight: 900">{{w.term}}</span>
+            <span style="font-size: 15px; font-weight: 600; color: #3C4352">{{w.def}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- Replay teaser -->
+    <section aria-label="Watch it again" style="background: #22262E; color: #FFFFFF; border-radius: 20px; padding: 22px 28px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 360px">
+        <h2 style="margin: 0; font-size: 22px; font-weight: 900">Asleep before the end? Watch it tomorrow.</h2>
+        <p style="margin: 0; font-size: 15px; font-weight: 600; color: #C9CFDA">The replay plays the whole night in 60 seconds — chairs fill up, jars fill, runners move.</p>
+      </div>
+      <a href="#replay" style="min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 10px 22px; border-radius: 12px; background: #FFD66B; color: #22262E; font-size: 16px; font-weight: 900; text-decoration: none">▶ Play the night</a>
+    </section>
+  </main>
+
+  <footer style="width: 100%; box-sizing: border-box; padding: 14px 32px 22px; font-size: 13px; font-weight: 600; color: #5B6274; border-top: 2px solid #E6E2D3; background: #FFFFFF">Numbers come from civicAPI and are checked against official state counts. "Won" means the source says so or Dad marked it — this page never guesses. Sample data shown for layout.</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#FFD66B","options":["#FFD66B","#6DBE7C","#F0A868","#9DB8E6"],"section":"Theme"},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const D = '#3A6FB7', R = '#C0463F';
+    const lanes = [
+      { team: 'Blue team', color: D, seats: 38, pct: 38 },
+      { team: 'Red team', color: R, seats: 41, pct: 41 }
+    ];
+    const chairs = [];
+    for (let i = 0; i < 100; i++) {
+      if (i < 38) chairs.push({ bg: D, border: D });
+      else if (i < 79) chairs.push({ bg: R, border: R });
+      else chairs.push({ bg: 'repeating-linear-gradient(135deg, #D9D7CF 0 4px, #FFFFFF 4px 8px)', border: '#D9D7CF' });
+    }
+    const jars = [
+      { state: 'CA', pct: 23, label: '23% done' },
+      { state: 'TX', pct: 61, label: '61% done' },
+      { state: 'GA', pct: 72, label: '72% done' },
+      { state: 'FL', pct: 94, label: '94% done' },
+      { state: 'ME', pct: 88, label: '88% done' }
+    ];
+    const props = [
+      { id: 'Prop 3', question: '[Plain-language version of the question, written by Dad]', yes: 58, no: 42, rep: '23%' },
+      { id: 'Prop 5', question: '[Plain-language version of the question, written by Dad]', yes: 48, no: 52, rep: '23%' },
+      { id: 'Measure [X] · Oakland', question: '[Plain-language version of the question, written by Dad]', yes: 64, no: 36, rep: '18%' }
+    ];
+    const players = [
+      { name: 'Player 1', right: 2, waiting: 3, points: 20 },
+      { name: 'Player 2', right: 1, waiting: 3, points: 10 },
+      { name: 'Dad', right: 2, waiting: 3, points: 20 }
+    ];
+    const words = [
+      { term: 'Senate', def: '100 people (2 from each state) who help make laws for the whole country.' },
+      { term: 'House', def: '435 people who also make laws. Bigger states get more of them.' },
+      { term: 'Governor', def: 'The leader of a state, kind of like a principal for the whole state.' },
+      { term: 'Ballot measure', def: 'A yes-or-no question that voters answer themselves.' },
+      { term: '"Called"', def: 'Enough votes are counted that we know who won, even if counting isn’t finished.' }
+    ];
+    return { lanes, chairs, jars, props, players, words, accent: this.props.accent ?? '#FFD66B' };
+  }
+}
+</script>
+</body>
+</html>
