@@ -32,7 +32,6 @@ export function TileMap({ tiles, label }: TileMapProps) {
           >
             <Link
               href={`/state/${t.code}`}
-              aria-label={t.label}
               className="flex h-full w-full flex-col items-center justify-center no-underline"
               style={{ color: c.color }}
             >
@@ -41,6 +40,8 @@ export function TileMap({ tiles, label }: TileMapProps) {
               {t.sub2 && (
                 <span className={`hidden max-w-full px-0.5 font-mono text-[9px] whitespace-nowrap sm:block sm:text-[10px] ${chip}`}>{t.sub2}</span>
               )}
+              {/* Full sentence for screen readers, appended so the accessible name always contains the visible text (WCAG 2.5.3). */}
+              <span className="sr-only">. {t.label}</span>
             </Link>
           </li>
         );

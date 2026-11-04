@@ -14,7 +14,8 @@ describe("TileMap", () => {
     const ga = items.find((li) => li.getAttribute("data-state") === "called" && li.textContent?.startsWith("GA"))!;
     expect(ga).toHaveStyle({ backgroundColor: "rgb(58, 111, 183)" });
     const link = within(ga).getByRole("link");
-    expect(link).toHaveAccessibleName(/Georgia US Senate: called for .* by civicAPI/);
+    // WCAG 2.5.3: the accessible name contains the visible text ("GA CALLED") followed by the sentence.
+    expect(link).toHaveAccessibleName(/^GA\s*CALLED\s*\. Georgia US Senate: called for .* by civicAPI/);
     expect(link).toHaveAttribute("href", "/state/GA");
   });
 });
