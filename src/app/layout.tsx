@@ -1,23 +1,31 @@
 import type { Metadata, Viewport } from "next";
-import { IBM_Plex_Mono, Source_Sans_3, Source_Serif_4 } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const serif = Source_Serif_4({
+// Self-hosted from npm (@fontsource, SIL OFL 1.1) so builds never depend on fetching Google
+// Fonts — a malformed Google response broke a CI build on 2026-11-04.
+const sourceSerif = localFont({
   variable: "--font-source-serif",
-  subsets: ["latin"],
-  weight: ["600", "700"],
+  src: "../../node_modules/@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-normal.woff2",
+  weight: "200 900",
+  display: "swap",
 });
 
-const sans = Source_Sans_3({
+const sourceSans = localFont({
   variable: "--font-source-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  src: "../../node_modules/@fontsource-variable/source-sans-3/files/source-sans-3-latin-wght-normal.woff2",
+  weight: "200 900",
+  display: "swap",
 });
 
-const mono = IBM_Plex_Mono({
+const plexMono = localFont({
   variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  src: [
+    { path: "../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-400-normal.woff2", weight: "400" },
+    { path: "../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-500-normal.woff2", weight: "500" },
+    { path: "../../node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-600-normal.woff2", weight: "600" },
+  ],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -40,7 +48,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${serif.variable} ${sans.variable} ${mono.variable} antialiased`}>
+      <body className={`${sourceSerif.variable} ${sourceSans.variable} ${plexMono.variable} antialiased`}>
         {children}
       </body>
     </html>
