@@ -25,7 +25,7 @@ Tick boxes as you go; commit after each ticked item.
 - [x] `src/lib/providers/civicapi/index.ts` — `listRaces({chamber})` using exact type strings (see CLAUDE.md gotchas); paginate `Referendum` with `offset`
   - Pagination stops on a short page, a repeated page (offset ignored → warn), or 10 pages. **Not yet verified live:** `Referendum`/`Proposition` payloads (civicAPI 502s at record time) — recorder still retrying; verify measure shape before §5.
 - [x] `src/lib/normalize/*` — party→color, `CA-01` → `{state, district}`, `status(race)` → `called | leading | counting | not_started`, `catchUp(race)` → `too_early | open | likely | locked` (margin vs. estimated outstanding = total/pct_reporting − total; mark `unreliable` when pct_reporting < 5 or state ∈ {CA, AZ, NV, WA, OR, UT, CO})
-  - **Assumption to confirm (Mike):** `likely` = trailer needs ≥ 60% of the remaining two-way vote (`LIKELY_REQUIRED_SHARE`). `locked` = margin > outstanding (FORECAST-MODEL.md §3.6). `too_early` = no votes or 0% reporting. Catch-up is pure arithmetic and ignores calls.
+  - **Confirmed by Mike (2026-11-04):** `likely` = trailer needs ≥ 60% of the remaining two-way vote (`LIKELY_REQUIRED_SHARE`). `locked` = margin > outstanding (FORECAST-MODEL.md §3.6). `too_early` = no votes or 0% reporting. Catch-up is pure arithmetic and ignores calls.
   - Overrides: `called` (must name a real candidate, else reported as ignored) beats source; `uncalled`/`disputed` suppress source winners.
 - [x] Tests: schema parses all fixtures; normalizers; backoff sequence; token bucket. **Acceptance:** `pnpm test` green, ≥90% coverage on `lib/`.
   - 174 tests; coverage on `src/lib`: 100% statements/lines/functions, 98.5% branches.

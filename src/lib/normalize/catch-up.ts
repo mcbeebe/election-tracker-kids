@@ -28,8 +28,8 @@ export interface CatchUpResult {
 }
 
 /**
- * Threshold for `likely`. Project assumption (not from a source): needing ≥60% of what is
- * left is treated as an uphill catch-up. Tune here only, and say so in the UI copy.
+ * Threshold for `likely`: the trailer needs ≥60% of what is left. Project choice, not from a
+ * source; confirmed by Mike on 2026-11-04. Tune here only, and say so in the UI copy.
  */
 export const LIKELY_REQUIRED_SHARE = 0.6;
 
