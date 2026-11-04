@@ -8,6 +8,8 @@ const ServerEnvSchema = z.object({
   // Floor of 1000 ms enforces the "≤1 req/s" rule (CLAUDE.md non-negotiable #3).
   CIVICAPI_MIN_INTERVAL_MS: z.coerce.number().int().min(1000).default(1000),
   RESULTS_TTL_SECONDS: z.coerce.number().int().min(15).default(45),
+  /** `fixtures` replays recorded payloads (development only; refused in production). */
+  RESULTS_PROVIDER: z.enum(["civicapi", "fixtures"]).default("civicapi"),
 });
 
 /** Validated server-side configuration. */

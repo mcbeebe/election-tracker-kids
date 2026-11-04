@@ -4,6 +4,7 @@ import { getServerDb } from "@/lib/db/client";
 import { createSnapshotWriter } from "@/lib/db/snapshots";
 import { log } from "@/lib/log";
 import { getCivicApiProvider } from "@/lib/providers/civicapi";
+import { FixtureProvider } from "@/lib/providers/fixtures";
 import type { Chamber, NormalizedRace, ProviderHealth, ProviderId, ResultsProvider } from "@/lib/providers/types";
 
 /** Body of `GET /api/results`. */
@@ -127,8 +128,10 @@ export function getResultsService(): ResultsService {
     const cfg = loadServerConfig();
     const db = getServerDb();
     if (!db) log("warn", "results.snapshots_disabled", { reason: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set" });
+    const provider = cfg.RESULTS_PROVIDER === "fixtures" ? new FixtureProvider() : getCivicApiProvider();
+    if (provider.id === "fixtures") log("warn", "results.fixture_provider", { note: "replaying recorded fixtures" });
     singleton = new ResultsService({
-      provider: getCivicApiProvider(),
+      provider,
       ttlMs: cfg.RESULTS_TTL_SECONDS * 1000,
       onRefresh: db ? createSnapshotWriter(db) : undefined,
     });

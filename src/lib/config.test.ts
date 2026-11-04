@@ -7,6 +7,7 @@ describe("loadServerConfig", () => {
       CIVICAPI_BASE: "https://civicapi.org/api/v2",
       CIVICAPI_MIN_INTERVAL_MS: 1000,
       RESULTS_TTL_SECONDS: 45,
+      RESULTS_PROVIDER: "civicapi",
     });
   });
 
@@ -24,6 +25,11 @@ describe("loadServerConfig", () => {
 
   it("rejects a non-URL base", () => {
     expect(() => loadServerConfig({ CIVICAPI_BASE: "civicapi" })).toThrow();
+  });
+
+  it("accepts only known providers", () => {
+    expect(loadServerConfig({ RESULTS_PROVIDER: "fixtures" }).RESULTS_PROVIDER).toBe("fixtures");
+    expect(() => loadServerConfig({ RESULTS_PROVIDER: "scrape-nyt" })).toThrow();
   });
 
   it("reads process.env by default", () => {

@@ -3,8 +3,11 @@
  * source (civicAPI, CA SoS, …) adapts its payloads into them.
  */
 
-/** Identifier of a results source. Shown verbatim in source badges. */
-export type ProviderId = "civicapi" | "ca-sos" | "ddhq";
+/**
+ * Identifier of a results source. Shown in source badges. `fixtures` = recorded civicAPI
+ * payloads replayed in development only; never available in production.
+ */
+export type ProviderId = "civicapi" | "ca-sos" | "ddhq" | "fixtures";
 
 /** Contest family. `measures` covers referendums, propositions and other ballot questions. */
 export type Chamber = "senate" | "house" | "governor" | "measures";

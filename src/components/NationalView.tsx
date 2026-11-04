@@ -1,0 +1,159 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import type { Chamber } from "@/lib/providers/types";
+import { buildBop } from "@/lib/view/bop";
+import { formatPt } from "@/lib/view/format";
+import { buildHouseTiles, buildStateTiles, closestRaces } from "@/lib/view/tiles";
+import { BopBar } from "./bop/BopBar";
+import { TileMap } from "./map/TileMap";
+import { ClosestRaces } from "./races/ClosestRaces";
+import { SourceBadge } from "./SourceBadge";
+import { isStale, usePolledResults } from "./usePolledResults";
+
+type MapChamber = Exclude<Chamber, "measures">;
+const CHAMBERS: readonly MapChamber[] = ["senate", "house", "governor"];
+const TAB_LABEL: Record<MapChamber, string> = { senate: "Senate", house: "House", governor: "Governors" };
+
+/** National results view (Option B layout). Client-side so it can poll. */
+export function NationalView() {
+  const { data, errors, loading, nextIn, now } = usePolledResults(CHAMBERS);
+  const [tab, setTab] = useState<MapChamber>("senate");
+  const [showLeading, setShowLeading] = useState(false);
+
+  const bops = useMemo(
+    () => CHAMBERS.flatMap((c) => (data[c] ? [buildBop(c, data[c].races, data[c].aggregate)] : [])),
+    [data],
+  );
+  const active = data[tab];
+  const tiles = useMemo(() => {
+    if (!active) return [];
+    return tab === "house" ? buildHouseTiles(active.races) : buildStateTiles(active.races, showLeading);
+  }, [active, tab, showLeading]);
+  const close = useMemo(() => (active ? closestRaces(active.races, 5) : []), [active]);
+
+  const loaded = CHAMBERS.map((c) => data[c]);
+  const asOfs = loaded.flatMap((p) => (p ? [p.asOf] : [])).sort();
+  const oldest = asOfs[0] ?? null;
+  const stale = isStale(loaded, now);
+  const errorList = Object.entries(errors);
+  const mismatch = bops.find((b) => b.aggregateMismatch && b.aggregateMismatch.length > 0);
+
+  return (
+    <div className="flex min-h-screen flex-col items-center bg-[#F7F6F2] text-[#1B1F2A]">
+      <header className="flex w-full flex-wrap items-center gap-x-6 gap-y-2 border-b border-[#E2E0D8] bg-white px-4 py-3 sm:px-8">
+        <h1 className="m-0 font-serif text-[22px] font-bold">Midterm Tracker</h1>
+        <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+          <SourceBadge source={active?.source ?? "civicapi"} asOf={oldest} stale={stale} />
+          <span className="font-mono text-xs text-[#5B6274]" aria-live="off">
+            next update in {nextIn}s
+          </span>
+        </div>
+      </header>
+
+      {active?.source === "fixtures" && (
+        <div role="note" className="w-full border-b border-[#C9B8F0] bg-[#F1ECFF] px-4 py-2 text-sm sm:px-8">
+          Development mode: replaying recorded civicAPI responses from Nov 4, 00:49–01:01 UTC. Not live results.
+        </div>
+      )}
+      {(stale || errorList.length > 0) && (
+        <div role="status" className="w-full border-b border-[#E9D8A6] bg-[#FFF7E0] px-4 py-2 text-sm sm:px-8">
+          {stale ? `Data may be out of date — last update ${formatPt(oldest)}. ` : ""}
+          {errorList.length > 0
+            ? `civicAPI is not responding for ${errorList.map(([c]) => TAB_LABEL[c as MapChamber] ?? c).join(", ")}; showing the last good data and retrying.`
+            : ""}
+        </div>
+      )}
+
+      <main className="flex w-full max-w-[1100px] flex-col gap-9 px-4 pt-7 pb-10 sm:px-6">
+        <section aria-labelledby="bop-h" className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-baseline gap-3">
+            <h2 id="bop-h" className="m-0 font-serif text-[28px] leading-tight font-bold sm:text-[34px]">
+              Control of Congress
+            </h2>
+            <p className="m-0 text-[15px] text-[#5B6274]">
+              Solid = called by civicAPI. Hatched = leading, not called. Senate totals include the 65 seats not up in 2026.
+            </p>
+          </div>
+          {loading && bops.length === 0 ? (
+            <p className="text-sm text-[#5B6274]">Loading results…</p>
+          ) : bops.length === 0 ? (
+            <p className="text-sm text-[#5B6274]">Results are unavailable right now. Retrying in {nextIn}s.</p>
+          ) : (
+            bops.map((b) => <BopBar key={b.chamber} model={b} />)
+          )}
+          {mismatch && (
+            <p className="text-xs text-[#8A4B00]">
+              Note: our {TAB_LABEL[mismatch.chamber]} total disagrees with civicAPI&apos;s own tally for{" "}
+              {mismatch.aggregateMismatch!.join(", ")}.
+            </p>
+          )}
+        </section>
+
+        <section aria-labelledby="map-h" className="flex flex-col gap-4 border-t border-[#E2E0D8] pt-7">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="map-h" className="m-0 font-serif text-[26px] font-bold">
+              {TAB_LABEL[tab]}
+              {active ? ` · ${active.races.length} ${tab === "governor" ? "races" : "seats"} up` : ""}
+            </h2>
+            <div role="tablist" aria-label="Chamber" className="flex gap-1 rounded-lg bg-[#ECEAE3] p-1">
+              {CHAMBERS.map((c) => (
+                <button
+                  key={c}
+                  role="tab"
+                  type="button"
+                  aria-selected={tab === c}
+                  onClick={() => setTab(c)}
+                  className={`min-h-9 rounded-md px-3 text-sm font-semibold ${tab === c ? "bg-white shadow-sm" : "text-[#5B6274]"}`}
+                >
+                  {TAB_LABEL[c]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-6">
+            <div className="min-w-0 flex-[999_1_520px] rounded-xl border border-[#E2E0D8] bg-white p-3 sm:p-5">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                {active ? <SourceBadge source={active.source} asOf={active.asOf} stale={active.stale} /> : <span />}
+                {tab !== "house" && (
+                  <label className="flex min-h-9 items-center gap-2 text-sm text-[#5B6274]">
+                    <input
+                      type="checkbox"
+                      checked={showLeading}
+                      onChange={(e) => setShowLeading(e.target.checked)}
+                      className="h-4 w-4 accent-[#2F5FA6]"
+                    />
+                    Show leading
+                  </label>
+                )}
+              </div>
+              {active ? (
+                <TileMap tiles={tiles} label={`${TAB_LABEL[tab]} races by state`} />
+              ) : (
+                <p className="text-sm text-[#5B6274]">{loading ? "Loading…" : "No data yet."}</p>
+              )}
+              <p className="mt-3 mb-0 text-xs text-[#5B6274]">
+                {tab === "house"
+                  ? "Each tile: seats called / seats in state. Solid only when every seat is called for one party. District shapes arrive in Phase 1."
+                  : "Solid = called by civicAPI · Hatched = leading (toggle) · Grey = counting · Light = no race in 2026."}
+              </p>
+            </div>
+            <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-2.5">
+              <h3 className="m-0 text-[13px] font-bold tracking-widest text-[#5B6274] uppercase">Closest uncalled races</h3>
+              <ClosestRaces rows={close} />
+              <p className="m-0 text-xs text-[#5B6274]">
+                Too early / Open / Likely / Locked is vote arithmetic, not a projection. * = % reporting is
+                precinct-based or very low here, so the estimate is shaky.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="w-full border-t border-[#E2E0D8] bg-white px-4 pt-4 pb-6 text-xs text-[#5B6274] sm:px-8">
+        Results via civicAPI (unverified third party). &ldquo;Called&rdquo; reflects the source&apos;s winner flag or a
+        manual override — never this app&apos;s projection. % reporting is precinct-based.
+      </footer>
+    </div>
+  );
+}
