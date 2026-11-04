@@ -1,5 +1,7 @@
 import { type CacheKeyStatus, type CacheOutcome, SwrCache, type SwrEvent } from "@/lib/cache/swr";
 import { loadServerConfig } from "@/lib/config";
+import { getServerDb } from "@/lib/db/client";
+import { createSnapshotWriter } from "@/lib/db/snapshots";
 import { log } from "@/lib/log";
 import { getCivicApiProvider } from "@/lib/providers/civicapi";
 import type { Chamber, NormalizedRace, ProviderHealth, ProviderId, ResultsProvider } from "@/lib/providers/types";
@@ -123,7 +125,13 @@ let singleton: ResultsService | null = null;
 export function getResultsService(): ResultsService {
   if (!singleton) {
     const cfg = loadServerConfig();
-    singleton = new ResultsService({ provider: getCivicApiProvider(), ttlMs: cfg.RESULTS_TTL_SECONDS * 1000 });
+    const db = getServerDb();
+    if (!db) log("warn", "results.snapshots_disabled", { reason: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set" });
+    singleton = new ResultsService({
+      provider: getCivicApiProvider(),
+      ttlMs: cfg.RESULTS_TTL_SECONDS * 1000,
+      onRefresh: db ? createSnapshotWriter(db) : undefined,
+    });
   }
   return singleton;
 }
