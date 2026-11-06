@@ -46,7 +46,8 @@ Tick boxes as you go; commit after each ticked item.
 - [x] On each cache refresh, upsert `races/candidates`, insert `snapshots` (server-side only; service role key in env)
   - Wired only when `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` are set; DB errors are logged and never block results.
 - [ ] **Acceptance:** `select count(*) from snapshots` grows every refresh
-  - **Blocked — needs Mike:** no Supabase project exists for this app (the account has 6 projects, all for other apps; not reusing them). Creating one may cost money on this org. Migration is not applied anywhere.
+  - Supabase project **election-tracker-kids** (`possuzttlpcpacuupcue`, us-west-1, org Waypoint) created 2026-11-06 with Mike's approval; `0001_init` applied and verified (5 tables, RLS on, 3 indexes; the only advisor note is the intended "RLS enabled, no policy").
+  - **Remaining:** set `SUPABASE_URL=https://possuzttlpcpacuupcue.supabase.co` and `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API) in Vercel, then confirm `select count(*) from snapshots` grows on each refresh.
 
 ## 4. National view (60 min) — Option B layout
 - [x] `/` — header with source badge + "as of" + next-refresh countdown; BoP bars (called solid, leading hatched, uncalled gap, majority tick); chamber tabs
