@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f6f2;
+  --foreground: #1b1f2a;
+}
+
+/*
+ * Party / status tokens are fixed by CLAUDE.md. Called vs leading must differ in
+ * lightness, not hue alone; "leading" is additionally rendered hatched.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-dem: #3a6fb7;
+  --color-rep: #c0463f;
+  --color-ind: #6b7a94;
+  --color-counting: #2b3a57;
+  --font-sans: var(--font-source-sans), system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-source-sans), system-ui, sans-serif;
+}

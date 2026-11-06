@@ -77,3 +77,6 @@ numbers spot-checked against civicapi.org for 3 races · committed · `docs/TASK
 - `percent_reporting` is precinct-based, not vote-based; CA mail ballots count for weeks.
 - Intermittent 502 / empty body under load. Treat empty body as a retryable error.
 - Several states redrew House districts for 2026; do not use pre-2026 district TopoJSON.
+- Each chamber search includes a `province: "US"` national aggregate row (Senate 87528, House
+  87524). It is not a seat — `NormalizedRace.kind === "national_aggregate"`. See DATA-SOURCES.md.
+- `/status` can be 200 while `/race/search` is 502/503 under load.

@@ -5,6 +5,7 @@ node_modules/
 
 # next.js
 .next/
+.next-*/
 out/
 build/
 dist/
@@ -32,3 +33,6 @@ yarn-error.log*
 next-env.d.ts
 
 # archive of superseded artifacts lives in-repo on purpose (docs/Archive/) — not ignored
+
+# pnpm
+.pnpm-debug.log*

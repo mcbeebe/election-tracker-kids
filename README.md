@@ -9,7 +9,9 @@ Senate, House, Governors, and ballot measures. Personal project.
 
 ## Status
 
-`v0.1` — plan and mockups under review. No application code yet.
+Phase 0 in progress — §0–§5 built; §3 (Supabase) and §6 (deploy) wait on decisions; live acceptance pending civicAPI recovery. See [`docs/TASKS-PHASE0.md`](docs/TASKS-PHASE0.md).
+
+Dev without hitting civicAPI: `RESULTS_PROVIDER=fixtures pnpm dev` replays recorded responses (refused in production).
 
 ## Data provenance
 
