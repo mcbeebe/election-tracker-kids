@@ -24,6 +24,7 @@ never implies "leading = won," and captures every refresh so the night can be re
 | D7 | Probabilities: show sourced forecasts + live markets + catch-up arithmetic now; build our own model in Phase 2 behind a validation gate (`docs/FORECAST-MODEL.md`) |
 | D8 | AI-written analysis ("What's moving this?") grounded only in our structured data, labeled "AI summary"; Phase 1 |
 | D9 | Development continues in Claude Code using `CLAUDE.md` + `docs/TASKS-PHASE0.md` |
+| D10 | (2026-11-07) The deployed site is **public**, superseding D4's personal-use scope. civicAPI requires attribution for non-personal use, so every page links to civicAPI in the footer. Search engines are still asked not to index it (`robots: noindex`). |
 
 ## 3. Data sources — verified 2026-11-03 15:40–15:55 PT
 
