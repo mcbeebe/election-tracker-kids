@@ -1,5 +1,6 @@
 "use client";
 
+import { SiteFooter } from "./SiteFooter";
 import Link from "next/link";
 import type { Chamber, ForecastChamber } from "@/lib/providers/types";
 import { filterMeasures, measureRow } from "@/lib/view/measures";
@@ -80,6 +81,7 @@ export function StateView({ code }: { code: string }) {
           states it overstates how much of the vote is counted.
         </p>
       </main>
+      <SiteFooter />
     </div>
   );
 }

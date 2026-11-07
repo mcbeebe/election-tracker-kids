@@ -1,5 +1,6 @@
 "use client";
 
+import { SiteFooter } from "../SiteFooter";
 import { useMemo, useState } from "react";
 import { US_STATE_CODES } from "@/lib/normalize/district";
 import { filterMeasures, measureRow } from "@/lib/view/measures";
@@ -80,6 +81,7 @@ export function MeasuresView() {
           <p className="text-sm text-[#5B6274]">{loading ? "Loading…" : "Results are unavailable right now."}</p>
         )}
       </main>
+      <SiteFooter />
     </div>
   );
 }

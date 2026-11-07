@@ -7,6 +7,7 @@ import { buildHouseTiles, buildStateTiles, closestRaces } from "@/lib/view/tiles
 import { BopBar } from "./bop/BopBar";
 import { TileMap } from "./map/TileMap";
 import { ClosestRaces } from "./races/ClosestRaces";
+import { SiteFooter } from "./SiteFooter";
 import { SiteHeader } from "./SiteHeader";
 import { SourceBadge } from "./SourceBadge";
 import { StatusBanners } from "./StatusBanners";
@@ -169,10 +170,7 @@ export function NationalView() {
         </section>
       </main>
 
-      <footer className="w-full border-t border-[#E2E0D8] bg-white px-4 pt-4 pb-6 text-xs text-[#5B6274] sm:px-8">
-        Results via civicAPI (unverified third party). &ldquo;Called&rdquo; is civicAPI&apos;s own winner flag — never
-        this app&apos;s projection. % reporting is precinct-based.
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
